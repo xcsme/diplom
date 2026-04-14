@@ -25,8 +25,6 @@ api_router = APIRouter(prefix="/api")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# ==================== GAME DATA ====================
-
 INGREDIENTS = [
     {"id": "coffee", "name": "Кофейные зёрна", "base_price": 50, "unit": "кг", "icon": "coffee"},
     {"id": "milk", "name": "Молоко", "base_price": 30, "unit": "л", "icon": "milk"},
@@ -140,8 +138,6 @@ RANDOM_EVENTS = [
      "effect": {"visitor_multiplier": 1.3}, "probability": 0.06},
 ]
 
-# ==================== ACHIEVEMENTS ====================
-
 ACHIEVEMENTS = [
     {"id": "first_day", "name": "Первый рабочий день", "description": "Завершите первый день работы", "icon": "sunrise",
      "condition": lambda s: s.get("current_day", 1) > 1},
@@ -176,7 +172,6 @@ ACHIEVEMENTS = [
 ]
 
 def check_achievements(game_state: dict) -> list:
-    """Check which new achievements have been unlocked."""
     current = set(game_state.get("achievements", []))
     newly_unlocked = []
     for ach in ACHIEVEMENTS:
@@ -184,16 +179,14 @@ def check_achievements(game_state: dict) -> list:
             newly_unlocked.append(ach["id"])
     return newly_unlocked
 
-# ==================== MODELS ====================
-
 class NewGameRequest(BaseModel):
     player_name: str = "Игрок"
 
 class BuyIngredientsRequest(BaseModel):
-    purchases: Dict[str, int]  # ingredient_id -> quantity
+    purchases: Dict[str, int]
 
 class SetPricesRequest(BaseModel):
-    prices: Dict[str, float]  # menu_item_id -> price
+    prices: Dict[str, float]
 
 class ToggleMenuItemRequest(BaseModel):
     item_id: str
@@ -201,9 +194,6 @@ class ToggleMenuItemRequest(BaseModel):
 
 class BuyUpgradeRequest(BaseModel):
     upgrade_id: str
-
-# ==================== HELPER FUNCTIONS ====================
-
 def create_initial_game_state(player_name: str) -> dict:
     return {
         "id": str(uuid.uuid4()),
@@ -281,7 +271,6 @@ def simulate_day(game_state: dict) -> dict:
         "rep_change": 0,
     }
 
-    # Generate random events
     for event in RANDOM_EVENTS:
         if random.random() < event["probability"]:
             events_today.append(event)
@@ -295,11 +284,9 @@ def simulate_day(game_state: dict) -> dict:
                         else:
                             day_effects[key] += val
 
-    # Apply upgrade effects to speed
     day_effects["speed_multiplier"] *= get_speed_multiplier(upgrades)
     quality_mult = get_quality_multiplier(upgrades)
 
-    # Manager auto-buy
     auto_buy_cost = 0
     if "manager" in upgrades:
         for ing in INGREDIENTS:
@@ -311,14 +298,10 @@ def simulate_day(game_state: dict) -> dict:
                 inventory[ing["id"]] = current + to_buy
         money -= auto_buy_cost
 
-    # Calculate base visitors: reputation-driven + randomness
     base_visitors = max(5, int(reputation / 15) + random.randint(-3, 5))
     visitors = max(1, int(base_visitors * day_effects["visitor_multiplier"]))
 
-    # Serving capacity per day (base 20, modified by speed)
     max_serve = int(20 * day_effects["speed_multiplier"])
-
-    # Available menu items
     available_items = [m for m in MENU_ITEMS if available.get(m["id"], False)]
     if not available_items:
         available_items = [MENU_ITEMS[0]]
@@ -329,11 +312,9 @@ def simulate_day(game_state: dict) -> dict:
     orders_detail = {}
 
     for _ in range(min(visitors, max_serve)):
-        # Customer picks a random item weighted by popularity
         weights = [m["popularity"] for m in available_items]
         chosen = random.choices(available_items, weights=weights, k=1)[0]
 
-        # Check ingredients
         can_make = True
         for ing_id, qty_needed in chosen["recipe"].items():
             if inventory.get(ing_id, 0) < qty_needed:
@@ -343,18 +324,14 @@ def simulate_day(game_state: dict) -> dict:
         if not can_make:
             continue
 
-        # Consume ingredients
         for ing_id, qty_needed in chosen["recipe"].items():
             inventory[ing_id] = round(inventory[ing_id] - qty_needed, 2)
 
-        # Revenue
         sell_price = prices.get(chosen["id"], chosen["base_price"])
         revenue += sell_price
 
-        # Satisfaction: based on price fairness and quality
         cost = calculate_ingredient_cost(chosen)
         price_ratio = sell_price / (cost * 2) if cost > 0 else 1
-        # If price is much higher than 2x cost, satisfaction drops
         satisfaction = min(1.0, (1.0 / price_ratio) * quality_mult * day_effects["price_tolerance"])
         satisfaction = max(0.1, min(1.0, satisfaction))
         total_satisfaction += satisfaction
@@ -362,18 +339,15 @@ def simulate_day(game_state: dict) -> dict:
         served += 1
         orders_detail[chosen["id"]] = orders_detail.get(chosen["id"], 0) + 1
 
-    # Calculate reputation change
     if served > 0:
         avg_sat = total_satisfaction / served
-        # Reputation change: +/- based on satisfaction
         rep_change = int((avg_sat - 0.5) * 20 * day_effects["rep_multiplier"])
     else:
         avg_sat = 0
-        rep_change = -5  # Penalty for not serving anyone
+        rep_change = -5
 
     rep_change += day_effects["rep_change"]
 
-    # Unserved visitors hurt reputation
     unserved = min(visitors, max_serve) - served
     if unserved > 0:
         rep_change -= int(unserved * 2)
@@ -381,7 +355,6 @@ def simulate_day(game_state: dict) -> dict:
     new_reputation = max(0, min(1000, reputation + rep_change))
     expenses = auto_buy_cost
 
-    # Check game status
     new_money = money + revenue
     status = "active"
     if new_money <= 0:
@@ -422,15 +395,12 @@ def simulate_day(game_state: dict) -> dict:
 
     return report, updated_state
 
-# ==================== API ROUTES ====================
-
 @api_router.get("/")
 async def root():
     return {"message": "Кофейня: Мастерская вкуса API"}
 
 @api_router.get("/game/data")
 async def get_game_data():
-    """Return static game data: ingredients, menu, upgrades, achievements"""
     return {
         "ingredients": INGREDIENTS,
         "menu_items": [{**m, "cost": calculate_ingredient_cost(m)} for m in MENU_ITEMS],
@@ -508,7 +478,6 @@ async def buy_ingredients(game_id: str, req: BuyIngredientsRequest):
         }}
     )
 
-    # Check achievements after purchase
     updated = {**state, "money": new_money, "inventory": new_inventory, "total_spent_on_ingredients": new_total_spent}
     new_achs = check_achievements(updated)
     if new_achs:
@@ -580,14 +549,12 @@ async def buy_upgrade(game_id: str, req: BuyUpgradeRequest):
         "last_save": datetime.now(timezone.utc).isoformat(),
     }
 
-    # Apply marketing rep bonus immediately
     if upgrade["effect_type"] == "rep_bonus":
         new_rep = min(1000, state["reputation"] + int(upgrade["effect_value"]))
         update_data["reputation"] = new_rep
 
     await db.game_states.update_one({"id": game_id}, {"$set": update_data})
 
-    # Check achievements after upgrade
     updated = {**state, **update_data}
     new_achs = check_achievements(updated)
     if new_achs:
@@ -609,7 +576,6 @@ async def play_day(game_id: str):
 
     report, updated_state = simulate_day(state)
 
-    # Update cumulative tracking fields
     updated_state["total_customers"] = state.get("total_customers", 0) + report["served"]
     updated_state["total_revenue"] = round(state.get("total_revenue", 0) + report["revenue"], 2)
     updated_state["total_events"] = state.get("total_events", 0) + len(report["events"])
@@ -621,7 +587,6 @@ async def play_day(game_id: str):
 
     await db.game_states.update_one({"id": game_id}, {"$set": updated_state})
 
-    # Check achievements
     merged = {**state, **updated_state}
     new_achs = check_achievements(merged)
     if new_achs:
@@ -629,7 +594,6 @@ async def play_day(game_id: str):
         await db.game_states.update_one({"id": game_id}, {"$set": {"achievements": all_achs}})
         updated_state["achievements"] = all_achs
 
-    # Save daily stats
     stat_doc = {
         "game_id": game_id,
         "day": report["day"],
@@ -643,7 +607,6 @@ async def play_day(game_id: str):
     }
     await db.daily_stats.insert_one(stat_doc)
 
-    # Save log events
     logs = []
     for event in report["events"]:
         logs.append({
@@ -680,7 +643,6 @@ async def get_log(game_id: str):
     ).sort("day", -1).to_list(500)
     return logs
 
-# Include router
 app.include_router(api_router)
 
 app.add_middleware(
