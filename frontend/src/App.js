@@ -16,6 +16,11 @@ import { Toaster, toast } from 'sonner';
 import {
   PlayCircle, Package, UtensilsCrossed, Wrench, BarChart3
 } from 'lucide-react';
+import {
+  initAudio, setMuted, getMuted, startAmbient,
+  playClick, playCoin, playSpend, playSuccess, playError,
+  playEvent, playDayStart, playDayEnd, playWin, playLose, playUpgrade
+} from '@/utils/SoundManager';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -36,6 +41,13 @@ function App() {
   const [dailyReport, setDailyReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
+
+  const handleToggleSound = useCallback(() => {
+    const newVal = !soundOn;
+    setSoundOn(newVal);
+    setMuted(!newVal);
+  }, [soundOn]);
 
   // Fetch static game data
   useEffect(() => {
@@ -55,13 +67,17 @@ function App() {
   const handleNewGame = async (playerName) => {
     setLoading(true);
     try {
+      initAudio();
       const res = await axios.post(`${API}/game/new`, { player_name: playerName });
       setGameState(res.data);
       setStarted(true);
       setActiveTab('main');
       toast.success('Новая игра начата!');
+      playSuccess();
+      startAmbient();
     } catch (err) {
       toast.error('Ошибка при создании игры');
+      playError();
       console.error(err);
     }
     setLoading(false);
@@ -70,13 +86,17 @@ function App() {
   const handleLoadGame = async (gameId) => {
     setLoading(true);
     try {
+      initAudio();
       const res = await axios.get(`${API}/game/${gameId}`);
       setGameState(res.data);
       setStarted(true);
       setActiveTab('main');
       toast.success('Игра загружена!');
+      playSuccess();
+      startAmbient();
     } catch (err) {
       toast.error('Ошибка при загрузке');
+      playError();
       console.error(err);
     }
     setLoading(false);
@@ -87,20 +107,37 @@ function App() {
       await axios.delete(`${API}/game/${gameId}`);
       setSaves((prev) => prev.filter((s) => s.id !== gameId));
       toast.success('Сохранение удалено');
+      playClick();
     } catch (err) {
       toast.error('Ошибка при удалении');
+      playError();
     }
   };
 
   const handlePlayDay = async () => {
     if (!gameState) return;
     setLoading(true);
+    playDayStart();
     try {
       const res = await axios.post(`${API}/game/${gameState.id}/play-day`);
-      setDailyReport(res.data.report);
+      const report = res.data.report;
+      setDailyReport(report);
       setGameState(res.data.game_state);
+
+      // Play sound based on result
+      setTimeout(() => {
+        if (report.events && report.events.length > 0) playEvent();
+        if (report.status === 'won') {
+          setTimeout(() => playWin(), 400);
+        } else if (report.status === 'lost_money' || report.status === 'lost_reputation') {
+          setTimeout(() => playLose(), 400);
+        } else {
+          playDayEnd();
+        }
+      }, 300);
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка при симуляции дня');
+      playError();
       console.error(err);
     }
     setLoading(false);
@@ -117,8 +154,10 @@ function App() {
         inventory: res.data.inventory,
       }));
       toast.success(`Закупка: -${res.data.total_cost.toFixed(0)} ₽`);
+      playSpend();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка при закупке');
+      playError();
     }
     setLoading(false);
   };
@@ -130,8 +169,10 @@ function App() {
       const res = await axios.post(`${API}/game/${gameState.id}/set-prices`, { prices });
       setGameState((prev) => ({ ...prev, menu_prices: res.data.menu_prices }));
       toast.success('Цены обновлены');
+      playClick();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка');
+      playError();
     }
     setLoading(false);
   };
@@ -144,8 +185,10 @@ function App() {
         is_available: isAvailable,
       });
       setGameState((prev) => ({ ...prev, menu_available: res.data.menu_available }));
+      playClick();
     } catch (err) {
       toast.error('Ошибка');
+      playError();
     }
   };
 
@@ -162,8 +205,10 @@ function App() {
       }));
       const upgrade = gameData?.upgrades?.find((u) => u.id === upgradeId);
       toast.success(`Куплено: ${upgrade?.name || upgradeId}`);
+      playUpgrade();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка при покупке');
+      playError();
     }
     setLoading(false);
   };
@@ -241,6 +286,8 @@ function App() {
               reputation={gameState?.reputation || 0}
               day={gameState?.current_day || 1}
               status={gameState?.status || 'active'}
+              soundOn={soundOn}
+              onToggleSound={handleToggleSound}
             />
 
             {/* Tab Navigation */}
@@ -252,7 +299,7 @@ function App() {
                     <button
                       key={tab.id}
                       className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => { setActiveTab(tab.id); playClick(); }}
                       data-testid={`tab-${tab.id}`}
                     >
                       <Icon size={15} />

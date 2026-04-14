@@ -1,8 +1,10 @@
-import { Coins, Star, CalendarDays, Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { Coins, Star, CalendarDays, Trophy, Volume2, VolumeX } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { playClick } from '../../utils/SoundManager';
 
-export default function TopBar({ money, reputation, day, status }) {
+export default function TopBar({ money, reputation, day, status, soundOn, onToggleSound }) {
   const winProgress = Math.min(100, (money / 100000) * 100);
 
   return (
@@ -11,13 +13,30 @@ export default function TopBar({ money, reputation, day, status }) {
       className="flex items-center justify-between px-5 py-3"
       style={{ background: 'var(--coffee-latte)', borderBottom: '1px solid var(--coffee-border)' }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <span
           className="font-bold text-lg tracking-tight"
           style={{ fontFamily: "'Playfair Display', serif", color: 'var(--coffee-secondary)' }}
         >
           Кофейня
         </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => { onToggleSound(); playClick(); }}
+                className="p-1.5 rounded-lg transition-all hover:bg-white/50"
+                style={{ color: 'var(--coffee-text-muted)' }}
+                data-testid="sound-toggle-btn"
+              >
+                {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{soundOn ? 'Выключить звук' : 'Включить звук'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <div className="flex items-center gap-3">
