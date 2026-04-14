@@ -9,7 +9,7 @@ export default function DailyReport({ report, onClose, gameData }) {
   const isProfitable = report.profit > 0;
   const repUp = report.rep_change > 0;
 
-  // Get menu item names for orders
+  // Получить названия пунктов меню для заказов
   const orderNames = gameData?.menu_items
     ? Object.entries(report.orders || {}).map(([id, qty]) => {
         const item = gameData.menu_items.find((m) => m.id === id);
@@ -38,7 +38,7 @@ export default function DailyReport({ report, onClose, gameData }) {
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
-          {/* Events */}
+          {/* События */}
           {report.events && report.events.length > 0 && (
             <div
               className="rounded-xl p-3"
@@ -56,7 +56,7 @@ export default function DailyReport({ report, onClose, gameData }) {
             </div>
           )}
 
-          {/* Visitors */}
+          {/* Посетители */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg p-3 text-center" style={{ background: 'var(--coffee-cream)' }}>
               <Users size={20} className="mx-auto mb-1" style={{ color: 'var(--coffee-primary)' }} />
@@ -74,7 +74,7 @@ export default function DailyReport({ report, onClose, gameData }) {
             </div>
           </div>
 
-          {/* Financial */}
+          {/* Финансы */}
           <div
             className="rounded-xl p-4"
             style={{ background: 'var(--coffee-surface)', border: '1px solid var(--coffee-border)' }}
@@ -110,7 +110,7 @@ export default function DailyReport({ report, onClose, gameData }) {
             </div>
           </div>
 
-          {/* Reputation & Satisfaction */}
+          {/* Репутация и удовлетворённость */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg p-3 text-center" style={{ background: 'var(--coffee-cream)' }}>
               <Star size={20} className="mx-auto mb-1" style={{ color: 'var(--coffee-warning)' }} />
@@ -133,7 +133,7 @@ export default function DailyReport({ report, onClose, gameData }) {
             </div>
           </div>
 
-          {/* Orders breakdown */}
+          {/* Разбивка заказов */}
           {orderNames.length > 0 && (
             <div className="text-xs" style={{ color: 'var(--coffee-text-muted)' }}>
               <p className="font-semibold mb-1">Заказы:</p>

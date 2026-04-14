@@ -1,14 +1,14 @@
 // health-endpoints.js
-// API endpoints for health checks and monitoring
+// API эндпоинты для проверок здоровья и мониторинга
 
 const os = require('os');
 
 const SERVER_START_TIME = Date.now();
 
 /**
- * Setup health check endpoints on the dev server
- * @param {Object} devServer - Webpack dev server instance
- * @param {Object} healthPlugin - Instance of WebpackHealthPlugin
+ * Настроить эндпоинты проверки здоровья на dev сервере
+ * @param {Object} devServer - Экземпляр Webpack dev сервера
+ * @param {Object} healthPlugin - Экземпляр WebpackHealthPlugin
  */
 function setupHealthEndpoints(devServer, healthPlugin) {
   if (!devServer || !devServer.app) {
@@ -24,7 +24,7 @@ function setupHealthEndpoints(devServer, healthPlugin) {
   console.log('[Health Check] Setting up health endpoints...');
 
   // ====================================================================
-  // GET /health - Detailed health status (JSON)
+  // GET /health - Детальный статус здоровья (JSON)
   // ====================================================================
   devServer.app.get("/health", (req, res) => {
     const webpackStatus = healthPlugin.getStatus();
@@ -80,7 +80,7 @@ function setupHealthEndpoints(devServer, healthPlugin) {
   });
 
   // ====================================================================
-  // GET /health/simple - Simple text response (OK/COMPILING/ERROR)
+  // GET /health/simple - Простой текстовый ответ (OK/COMPILING/ERROR)
   // ====================================================================
   devServer.app.get("/health/simple", (req, res) => {
     const webpackStatus = healthPlugin.getSimpleStatus();
@@ -97,7 +97,7 @@ function setupHealthEndpoints(devServer, healthPlugin) {
   });
 
   // ====================================================================
-  // GET /health/ready - Readiness check (Kubernetes/load balancer)
+  // GET /health/ready - Проверка готовности (Kubernetes/load balancer)
   // ====================================================================
   devServer.app.get("/health/ready", (req, res) => {
     const webpackStatus = healthPlugin.getSimpleStatus();
@@ -119,7 +119,7 @@ function setupHealthEndpoints(devServer, healthPlugin) {
   });
 
   // ====================================================================
-  // GET /health/live - Liveness check (Kubernetes)
+  // GET /health/live - Проверка живучести (Kubernetes)
   // ====================================================================
   devServer.app.get("/health/live", (req, res) => {
     res.status(200).json({
@@ -129,7 +129,7 @@ function setupHealthEndpoints(devServer, healthPlugin) {
   });
 
   // ====================================================================
-  // GET /health/errors - Get current errors and warnings
+  // GET /health/errors - Получить текущие ошибки и предупреждения
   // ====================================================================
   devServer.app.get("/health/errors", (req, res) => {
     const webpackStatus = healthPlugin.getStatus();
@@ -144,7 +144,7 @@ function setupHealthEndpoints(devServer, healthPlugin) {
   });
 
   // ====================================================================
-  // GET /health/stats - Compilation statistics
+  // GET /health/stats - Статистика компиляции
   // ====================================================================
   devServer.app.get("/health/stats", (req, res) => {
     const webpackStatus = healthPlugin.getStatus();
@@ -175,11 +175,11 @@ function setupHealthEndpoints(devServer, healthPlugin) {
 }
 
 // ====================================================================
-// Helper Functions
+// Вспомогательные функции
 // ====================================================================
 
 /**
- * Format bytes to human-readable string
+ * Форматировать байты в читаемую строку
  * @param {number} bytes
  * @returns {string}
  */
@@ -192,8 +192,8 @@ function formatBytes(bytes) {
 }
 
 /**
- * Format duration to human-readable string
- * @param {number} ms - Duration in milliseconds
+ * Форматировать продолжительность в читаемую строку
+ * @param {number} ms - Продолжительность в миллисекундах
  * @returns {string}
  */
 function formatDuration(ms) {

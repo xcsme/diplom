@@ -1,5 +1,5 @@
-// Procedural sound manager using Web Audio API
-// All sounds are synthesized — no external files needed
+// Процедурный менеджер звука с использованием Web Audio API
+// Все звуки синтезированы — внешние файлы не требуются
 
 let audioCtx = null;
 let isMuted = false;
@@ -25,7 +25,7 @@ function getMaster() {
   return masterGain;
 }
 
-// ── Utility: play a tone ──
+// ── Утилита: воспроизвести тон ──
 function playTone(freq, duration, type = 'sine', volume = 0.3, delay = 0) {
   if (isMuted) return;
   const ctx = getCtx();
@@ -42,7 +42,7 @@ function playTone(freq, duration, type = 'sine', volume = 0.3, delay = 0) {
   osc.stop(ctx.currentTime + delay + duration);
 }
 
-// ── Utility: noise burst ──
+// ── Утилита: шумовой всплеск ──
 function playNoise(duration, volume = 0.05, delay = 0) {
   if (isMuted) return;
   const ctx = getCtx();
@@ -55,7 +55,7 @@ function playNoise(duration, volume = 0.05, delay = 0) {
   const source = ctx.createBufferSource();
   source.buffer = buffer;
 
-  // Bandpass filter for warmth
+  // Полосовой фильтр для теплоты
   const filter = ctx.createBiquadFilter();
   filter.type = 'bandpass';
   filter.frequency.value = 800;
@@ -72,43 +72,43 @@ function playNoise(duration, volume = 0.05, delay = 0) {
 }
 
 // ══════════════════════════════════════
-//  SOUND EFFECTS
+//  ЗВУКОВЫЕ ЭФФЕКТЫ
 // ══════════════════════════════════════
 
-// Soft click for UI interactions (tabs, toggles)
+// Мягкий клик для взаимодействий с интерфейсом (вкладки, переключатели)
 export function playClick() {
   playTone(800, 0.06, 'sine', 0.12);
   playTone(1200, 0.04, 'sine', 0.06, 0.02);
 }
 
-// Coin / cash register for purchases and revenue
+// Монеты / кассовый аппарат для покупок и дохода
 export function playCoin() {
   playTone(1318, 0.1, 'sine', 0.2);
   playTone(1568, 0.1, 'sine', 0.15, 0.08);
   playTone(2093, 0.15, 'sine', 0.12, 0.15);
 }
 
-// Purchase / spend money (descending)
+// Покупка / трата денег (нисходящий)
 export function playSpend() {
   playTone(880, 0.08, 'triangle', 0.15);
   playTone(660, 0.1, 'triangle', 0.12, 0.07);
   playNoise(0.05, 0.03, 0.05);
 }
 
-// Success chime for upgrades, saves
+// Успешный звук для улучшений, сохранений
 export function playSuccess() {
   playTone(523, 0.12, 'sine', 0.2);
   playTone(659, 0.12, 'sine', 0.18, 0.1);
   playTone(784, 0.2, 'sine', 0.22, 0.2);
 }
 
-// Error buzz
+// Звук ошибки
 export function playError() {
   playTone(200, 0.15, 'sawtooth', 0.08);
   playTone(180, 0.15, 'sawtooth', 0.06, 0.05);
 }
 
-// Random event notification — mysterious bell
+// Уведомление о случайном событии — загадочный колокольчик
 export function playEvent() {
   playTone(880, 0.3, 'sine', 0.15);
   playTone(1108, 0.3, 'sine', 0.1, 0.15);
@@ -116,7 +116,7 @@ export function playEvent() {
   playNoise(0.1, 0.02);
 }
 
-// Day start — upbeat opening
+// Начало дня — энергичное открытие
 export function playDayStart() {
   playTone(392, 0.15, 'sine', 0.18);
   playTone(494, 0.15, 'sine', 0.16, 0.12);
@@ -124,7 +124,7 @@ export function playDayStart() {
   playTone(784, 0.25, 'sine', 0.2, 0.36);
 }
 
-// Day end — closing summary sound
+// Конец дня — заключительный звук
 export function playDayEnd() {
   playCoin();
   setTimeout(() => {
@@ -136,7 +136,7 @@ export function playDayEnd() {
   }, 200);
 }
 
-// Victory fanfare
+// Победный гимн
 export function playWin() {
   const notes = [523, 523, 523, 659, 784, 784, 659, 784, 1047];
   const times = [0, 0.12, 0.24, 0.36, 0.48, 0.6, 0.75, 0.87, 1.0];
@@ -146,7 +146,7 @@ export function playWin() {
   });
 }
 
-// Defeat — somber
+// Поражение — мрачный
 export function playLose() {
   playTone(392, 0.4, 'sine', 0.15);
   playTone(349, 0.4, 'sine', 0.13, 0.35);
@@ -154,7 +154,7 @@ export function playLose() {
   playTone(262, 0.8, 'sine', 0.15, 1.05);
 }
 
-// Upgrade purchased — level-up shimmer
+// Улучшение куплено — мерцание повышения уровня
 export function playUpgrade() {
   playTone(440, 0.1, 'sine', 0.15);
   playTone(554, 0.1, 'sine', 0.15, 0.08);
@@ -164,24 +164,24 @@ export function playUpgrade() {
 }
 
 // ══════════════════════════════════════
-//  AMBIENT COFFEE SHOP BACKGROUND
+//  ФОНОВАЯ АТМОСФЕРА КОФЕЙНИ
 // ══════════════════════════════════════
 
 export function startAmbient() {
   if (isMuted || ambientRunning) return;
   const ctx = getCtx();
 
-  // Create a warm, gentle ambient loop using filtered noise + subtle drone
-  const bufferSize = ctx.sampleRate * 4; // 4 seconds loop
+  // Создать тёплый, мягкий фоновый цикл с использованием фильтрованного шума + лёгкий гул
+  const bufferSize = ctx.sampleRate * 4; // 4 секунды цикл
   const buffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate);
 
   for (let ch = 0; ch < 2; ch++) {
     const data = buffer.getChannelData(ch);
     for (let i = 0; i < bufferSize; i++) {
-      // Very soft brownian noise
+      // Очень мягкий броуновский шум
       const t = i / ctx.sampleRate;
       data[i] = (Math.random() * 2 - 1) * 0.015 +
-        Math.sin(t * 0.8 * Math.PI * 2) * 0.003 +  // very subtle drone
+        Math.sin(t * 0.8 * Math.PI * 2) * 0.003 +  // очень лёгкий гул
         Math.sin(t * 1.2 * Math.PI * 2) * 0.002;
     }
   }
@@ -190,7 +190,7 @@ export function startAmbient() {
   ambientSource.buffer = buffer;
   ambientSource.loop = true;
 
-  // Warm low-pass filter
+  // Тёплый фильтр низких частот
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
   lp.frequency.value = 400;
@@ -208,14 +208,14 @@ export function startAmbient() {
 
 export function stopAmbient() {
   if (ambientSource) {
-    try { ambientSource.stop(); } catch (e) { /* ignore */ }
+    try { ambientSource.stop(); } catch (e) { /* игнорировать */ }
     ambientSource = null;
   }
   ambientRunning = false;
 }
 
 // ══════════════════════════════════════
-//  MUTE CONTROL
+//  УПРАВЛЕНИЕ ОТКЛЮЧЕНИЕМ ЗВУКА
 // ══════════════════════════════════════
 
 export function setMuted(muted) {
@@ -234,7 +234,7 @@ export function getMuted() {
   return isMuted;
 }
 
-// Initialize audio context on first user interaction
+// Инициализировать аудио контекст при первом взаимодействии пользователя
 export function initAudio() {
   getCtx();
 }

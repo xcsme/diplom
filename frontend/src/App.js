@@ -75,7 +75,7 @@ function App() {
     axios.get(`${API}/game/saves/list`).then((res) => setSaves(res.data)).catch(console.error);
   }, []);
 
-  // Fetch static game data
+  // Получить статические игровые данные
   useEffect(() => {
     axios.get(`${API}/game/data`).then((res) => setGameData(res.data)).catch(console.error);
     axios.get(`${API}/game/saves/list`).then((res) => setSaves(res.data)).catch(console.error);
@@ -150,12 +150,12 @@ function App() {
       setDailyReport(report);
       setGameState(res.data.game_state);
 
-      // Show achievement toasts
+      // Показать уведомления о достижениях
       if (report.new_achievements && report.new_achievements.length > 0) {
         showAchievementToasts(report.new_achievements);
       }
 
-      // Play sound based on result
+      // Воспроизвести звук на основе результата
       setTimeout(() => {
         if (report.events && report.events.length > 0) playEvent();
         if (report.status === 'won') {
@@ -333,7 +333,7 @@ function App() {
               onExit={handleExit}
             />
 
-            {/* Tab Navigation */}
+            {/* Навигация по вкладкам */}
             <div className="px-4 pt-2" style={{ background: 'var(--coffee-bg)' }}>
               <div className="tab-nav" data-testid="tab-navigation">
                 {TABS.map((tab) => {
@@ -353,12 +353,12 @@ function App() {
               </div>
             </div>
 
-            {/* Screen Content */}
+            {/* Содержимое экрана */}
             <div className="flex-1 overflow-hidden" style={{ background: 'var(--coffee-bg)' }}>
               {renderScreen()}
             </div>
 
-            {/* Modals */}
+            {/* Модальные окна */}
             <DailyReport
               report={dailyReport}
               onClose={() => setDailyReport(null)}

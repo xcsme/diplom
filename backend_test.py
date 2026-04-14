@@ -19,7 +19,7 @@ class CoffeeShopAPITester:
         self.test_results = []
 
     def log_test(self, name, success, details=""):
-        """Log test result"""
+        """Записать результат теста"""
         self.tests_run += 1
         if success:
             self.tests_passed += 1
@@ -34,7 +34,7 @@ class CoffeeShopAPITester:
         })
 
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
-        """Run a single API test"""
+        """Запустить один API тест"""
         url = f"{self.api_url}/{endpoint}"
         if headers is None:
             headers = {'Content-Type': 'application/json'}
@@ -70,41 +70,41 @@ class CoffeeShopAPITester:
             return False, {}
 
     def test_root_endpoint(self):
-        """Test root API endpoint"""
+        """Тестировать корневой эндпоинт API"""
         return self.run_test("Root API endpoint", "GET", "", 200)
 
     def test_game_data(self):
-        """Test static game data endpoint"""
+        """Тестировать эндпоинт статических игровых данных"""
         success, data = self.run_test("Get game data", "GET", "game/data", 200)
         if success:
-            # Verify data structure
+            # Проверить структуру данных
             required_keys = ['ingredients', 'menu_items', 'upgrades', 'achievements']
             for key in required_keys:
                 if key not in data:
                     self.log_test(f"Game data - {key} missing", False, f"Missing key: {key}")
                     return False
             
-            # Check ingredients
+            # Проверить ингредиенты
             if len(data['ingredients']) < 6:
                 self.log_test("Game data - ingredients count", False, f"Expected at least 6 ingredients, got {len(data['ingredients'])}")
                 return False
             
-            # Check menu items
+            # Проверить пункты меню
             if len(data['menu_items']) < 6:
                 self.log_test("Game data - menu items count", False, f"Expected at least 6 menu items, got {len(data['menu_items'])}")
                 return False
                 
-            # Check upgrades
+            # Проверить улучшения
             if len(data['upgrades']) < 10:
                 self.log_test("Game data - upgrades count", False, f"Expected at least 10 upgrades, got {len(data['upgrades'])}")
                 return False
             
-            # Check achievements - should have exactly 15
+            # Проверить достижения - должно быть ровно 15
             if len(data['achievements']) != 15:
                 self.log_test("Game data - achievements count", False, f"Expected exactly 15 achievements, got {len(data['achievements'])}")
                 return False
             
-            # Verify achievement structure
+            # Проверить структуру достижений
             for ach in data['achievements']:
                 required_ach_keys = ['id', 'name', 'description', 'icon']
                 for key in required_ach_keys:
@@ -117,7 +117,7 @@ class CoffeeShopAPITester:
         return success
 
     def test_new_game(self):
-        """Test creating a new game"""
+        """Тестировать создание новой игры"""
         success, data = self.run_test(
             "Create new game", 
             "POST", 
@@ -127,21 +127,21 @@ class CoffeeShopAPITester:
         )
         if success and 'id' in data:
             self.game_id = data['id']
-            # Verify initial game state
+            # Проверить начальное состояние игры
             expected_keys = ['id', 'player_name', 'money', 'reputation', 'current_day', 'status', 'inventory', 'achievements']
             for key in expected_keys:
                 if key not in data:
                     self.log_test(f"New game - {key} missing", False, f"Missing key: {key}")
                     return False
             
-            # Check achievement tracking fields
+            # Проверить поля отслеживания достижений
             achievement_tracking_keys = ['total_customers', 'total_events', 'best_daily_revenue', 'total_spent_on_ingredients', 'had_perfect_day']
             for key in achievement_tracking_keys:
                 if key not in data:
                     self.log_test(f"New game - achievement tracking {key} missing", False, f"Missing achievement tracking key: {key}")
                     return False
             
-            # Check initial values
+            # Проверить начальные значения
             if data['money'] != 5000.0:
                 self.log_test("New game - initial money", False, f"Expected 5000, got {data['money']}")
                 return False
@@ -154,12 +154,12 @@ class CoffeeShopAPITester:
                 self.log_test("New game - initial day", False, f"Expected 1, got {data['current_day']}")
                 return False
             
-            # Check initial achievement state
+            # Проверить начальное состояние достижений
             if not isinstance(data['achievements'], list) or len(data['achievements']) != 0:
                 self.log_test("New game - initial achievements", False, f"Expected empty achievements list, got {data['achievements']}")
                 return False
             
-            # Check initial tracking values
+            # Проверить начальные значения отслеживания
             if data['total_customers'] != 0:
                 self.log_test("New game - initial total_customers", False, f"Expected 0, got {data['total_customers']}")
                 return False
@@ -169,7 +169,7 @@ class CoffeeShopAPITester:
         return success
 
     def test_get_game(self):
-        """Test retrieving game state"""
+        """Тестировать получение состояния игры"""
         if not self.game_id:
             self.log_test("Get game state", False, "No game ID available")
             return False
@@ -177,12 +177,12 @@ class CoffeeShopAPITester:
         return self.run_test("Get game state", "GET", f"game/{self.game_id}", 200)
 
     def test_buy_ingredients(self):
-        """Test buying ingredients"""
+        """Тестировать покупку ингредиентов"""
         if not self.game_id:
             self.log_test("Buy ingredients", False, "No game ID available")
             return False
         
-        # Test buying some coffee and milk
+        # Тестировать покупку кофе и молока
         purchases = {
             "coffee": 10,
             "milk": 15
@@ -197,17 +197,17 @@ class CoffeeShopAPITester:
         )
         
         if success:
-            # Verify response structure
+            # Проверить структуру ответа
             if 'money' not in data or 'inventory' not in data or 'total_cost' not in data:
                 self.log_test("Buy ingredients - response structure", False, "Missing required fields in response")
                 return False
             
-            # Check for new_achievements field
+            # Проверить поле new_achievements
             if 'new_achievements' not in data:
                 self.log_test("Buy ingredients - new_achievements field", False, "Missing new_achievements field")
                 return False
             
-            # Verify cost calculation (coffee: 50*10 + milk: 30*15 = 950)
+            # Проверить расчёт стоимости (кофе: 50*10 + молоко: 30*15 = 950)
             expected_cost = 950
             if abs(data['total_cost'] - expected_cost) > 0.01:
                 self.log_test("Buy ingredients - cost calculation", False, f"Expected {expected_cost}, got {data['total_cost']}")
@@ -219,12 +219,12 @@ class CoffeeShopAPITester:
         return success
 
     def test_set_prices(self):
-        """Test setting menu prices"""
+        """Тестировать установку цен в меню"""
         if not self.game_id:
             self.log_test("Set prices", False, "No game ID available")
             return False
         
-        # Test setting prices for espresso and cappuccino
+        # Тестировать установку цен для эспрессо и капучино
         prices = {
             "espresso": 150.0,
             "cappuccino": 200.0
@@ -239,7 +239,7 @@ class CoffeeShopAPITester:
         )
         
         if success and 'menu_prices' in data:
-            # Verify prices were set correctly
+            # Проверить правильность установки цен
             for item_id, price in prices.items():
                 if data['menu_prices'].get(item_id) != price:
                     self.log_test("Set prices - price verification", False, f"Price for {item_id} not set correctly")
@@ -249,12 +249,12 @@ class CoffeeShopAPITester:
         return success
 
     def test_toggle_menu_item(self):
-        """Test toggling menu item availability"""
+        """Тестировать переключение доступности пункта меню"""
         if not self.game_id:
             self.log_test("Toggle menu item", False, "No game ID available")
             return False
         
-        # Test disabling espresso
+        # Тестировать отключение эспрессо
         success, data = self.run_test(
             "Toggle menu item", 
             "POST", 
@@ -272,12 +272,12 @@ class CoffeeShopAPITester:
         return success
 
     def test_buy_upgrade(self):
-        """Test buying an upgrade"""
+        """Тестировать покупку улучшения"""
         if not self.game_id:
             self.log_test("Buy upgrade", False, "No game ID available")
             return False
         
-        # Test buying coffee machine level 2 (should cost 3000)
+        # Тестировать покупку кофемашины 2 уровня (должна стоить 3000)
         success, data = self.run_test(
             "Buy upgrade", 
             "POST", 
@@ -287,22 +287,22 @@ class CoffeeShopAPITester:
         )
         
         if success:
-            # Verify response structure
+            # Проверить структуру ответа
             if 'money' not in data or 'purchased_upgrades' not in data:
                 self.log_test("Buy upgrade - response structure", False, "Missing required fields")
                 return False
             
-            # Check for new_achievements field
+            # Проверить поле new_achievements
             if 'new_achievements' not in data:
                 self.log_test("Buy upgrade - new_achievements field", False, "Missing new_achievements field")
                 return False
             
-            # Verify upgrade was added
+            # Проверить добавление улучшения
             if "coffee_machine_2" not in data['purchased_upgrades']:
                 self.log_test("Buy upgrade - upgrade verification", False, "Upgrade not added to purchased list")
                 return False
             
-            # Check if first_upgrade achievement was unlocked
+            # Проверить получение достижения first_upgrade
             if len(data['purchased_upgrades']) == 1 and 'first_upgrade' not in data['new_achievements']:
                 self.log_test("Buy upgrade - first_upgrade achievement", False, "first_upgrade achievement should be unlocked")
                 return False
@@ -313,7 +313,7 @@ class CoffeeShopAPITester:
         return success
 
     def test_play_day(self):
-        """Test playing a day simulation"""
+        """Тестировать симуляцию дня"""
         if not self.game_id:
             self.log_test("Play day", False, "No game ID available")
             return False
@@ -326,7 +326,7 @@ class CoffeeShopAPITester:
         )
         
         if success:
-            # Verify response structure
+            # Проверить структуру ответа
             if 'report' not in data or 'game_state' not in data:
                 self.log_test("Play day - response structure", False, "Missing report or game_state")
                 return False
@@ -340,17 +340,17 @@ class CoffeeShopAPITester:
                     self.log_test(f"Play day - report {key}", False, f"Missing {key} in report")
                     return False
             
-            # Verify day incremented
+            # Проверить увеличение дня
             if report['day'] != 1:
                 self.log_test("Play day - day number", False, f"Expected day 1, got {report['day']}")
                 return False
             
-            # Check if first_day achievement was unlocked (after first day played)
+            # Проверить получение достижения first_day (после первого сыгранного дня)
             if game_state.get('current_day', 1) > 1 and 'first_day' not in report.get('new_achievements', []):
-                # This might be expected if it's not the first day, so we'll just log it
+                # Это может быть ожидаемо, если это не первый день, поэтому просто залогируем
                 self.log_test("Play day - first_day achievement check", True, "Achievement tracking verified")
             
-            # Verify achievement tracking fields are updated
+            # Проверить обновление полей отслеживания достижений
             tracking_fields = ['total_customers', 'total_events', 'best_daily_revenue']
             for field in tracking_fields:
                 if field not in game_state:
@@ -363,7 +363,7 @@ class CoffeeShopAPITester:
         return success
 
     def test_get_stats(self):
-        """Test getting game statistics"""
+        """Тестировать получение игровой статистики"""
         if not self.game_id:
             self.log_test("Get stats", False, "No game ID available")
             return False
@@ -371,12 +371,12 @@ class CoffeeShopAPITester:
         success, data = self.run_test("Get game stats", "GET", f"game/{self.game_id}/stats", 200)
         
         if success:
-            # Should be a list of daily stats
+            # Должен быть список ежедневной статистики
             if not isinstance(data, list):
                 self.log_test("Get stats - data type", False, "Expected list of stats")
                 return False
             
-            # After playing one day, should have at least one stat entry
+            # После игры одного дня, должен быть хотя бы один элемент статистики
             if len(data) < 1:
                 self.log_test("Get stats - data count", False, "Expected at least one stat entry")
                 return False
@@ -386,7 +386,7 @@ class CoffeeShopAPITester:
         return success
 
     def test_get_log(self):
-        """Test getting game event log"""
+        """Тестировать получение журнала событий игры"""
         if not self.game_id:
             self.log_test("Get log", False, "No game ID available")
             return False
@@ -394,7 +394,7 @@ class CoffeeShopAPITester:
         success, data = self.run_test("Get game log", "GET", f"game/{self.game_id}/log", 200)
         
         if success:
-            # Should be a list of log entries
+            # Должен быть список записей журнала
             if not isinstance(data, list):
                 self.log_test("Get log - data type", False, "Expected list of log entries")
                 return False
@@ -404,16 +404,16 @@ class CoffeeShopAPITester:
         return success
 
     def test_list_saves(self):
-        """Test listing saved games"""
+        """Тестировать список сохранённых игр"""
         success, data = self.run_test("List saved games", "GET", "game/saves/list", 200)
         
         if success:
-            # Should be a list
+            # Должен быть список
             if not isinstance(data, list):
                 self.log_test("List saves - data type", False, "Expected list of saves")
                 return False
             
-            # Should contain our created game
+            # Должен содержать нашу созданную игру
             game_found = False
             for save in data:
                 if save.get('id') == self.game_id:
@@ -429,7 +429,7 @@ class CoffeeShopAPITester:
         return success
 
     def test_delete_game(self):
-        """Test deleting a game"""
+        """Тестировать удаление игры"""
         if not self.game_id:
             self.log_test("Delete game", False, "No game ID available")
             return False
@@ -437,7 +437,7 @@ class CoffeeShopAPITester:
         success, data = self.run_test("Delete game", "DELETE", f"game/{self.game_id}", 200)
         
         if success:
-            # Verify game is deleted by trying to get it (should return 404)
+            # Проверить удаление игры, попытавшись получить её (должен вернуть 404)
             deleted_success, _ = self.run_test("Verify game deleted", "GET", f"game/{self.game_id}", 404)
             if not deleted_success:
                 self.log_test("Delete game - verification", False, "Game still exists after deletion")
@@ -447,19 +447,19 @@ class CoffeeShopAPITester:
         return success
 
     def test_random_events_count(self):
-        """Test that there are 16 random events available"""
-        # This is a backend code inspection test - we'll check via game data or server response
-        # Since random events aren't directly exposed via API, we'll test indirectly through play-day
-        # But first let's add a simple test to verify the backend has the expected number
+        """Тестировать наличие 16 случайных событий"""
+        # Это тест проверки кода бэкенда - проверим через игровые данные или ответ сервера
+        # Поскольку случайные события не доступны напрямую через API, протестируем косвенно через play-day
+        # Сначала добавим простой тест для проверки наличия ожидаемого количества событий в бэкенде
         
-        # We can't directly test RANDOM_EVENTS count via API, but we can test that events occur
-        # Let's play multiple days and see if we get events
+        # Мы не можем напрямую тестировать количество RANDOM_EVENTS через API, но можем проверить, что события происходят
+        # Сыграем несколько дней и посмотрим, получим ли мы события
         if not self.game_id:
             self.log_test("Random events test", False, "No game ID available")
             return False
         
         events_found = []
-        # Play several days to potentially trigger events
+        # Сыграть несколько дней, чтобы потенциально получить события
         for i in range(5):
             success, data = self.run_test(
                 f"Play day {i+2} for events", 
@@ -473,7 +473,7 @@ class CoffeeShopAPITester:
                     if event.get('id') not in [e.get('id') for e in events_found]:
                         events_found.append(event)
         
-        # We should have found at least some events across multiple days
+        # Мы должны были найти хотя бы несколько событий за несколько дней
         if len(events_found) > 0:
             self.log_test("Random events - events occurring", True, f"Found {len(events_found)} different events")
         else:
@@ -482,14 +482,14 @@ class CoffeeShopAPITester:
         return True
 
     def test_error_cases(self):
-        """Test various error cases"""
-        # Test invalid game ID
+        """Тестировать различные случаи ошибок"""
+        # Тестировать неверный ID игры
         self.run_test("Invalid game ID", "GET", "game/invalid-id", 404)
         
-        # Test buying ingredients with insufficient funds
+        # Тестировать покупку ингредиентов с недостаточными средствами
         if self.game_id:
             expensive_purchases = {
-                "coffee": 1000  # This should exceed available money
+                "coffee": 1000  # Это должно превысить доступные средства
             }
             self.run_test(
                 "Insufficient funds", 
@@ -499,7 +499,7 @@ class CoffeeShopAPITester:
                 {"purchases": expensive_purchases}
             )
         
-        # Test buying non-existent upgrade
+        # Тестировать покупку несуществующего улучшения
         if self.game_id:
             self.run_test(
                 "Invalid upgrade", 
@@ -510,39 +510,39 @@ class CoffeeShopAPITester:
             )
 
     def run_all_tests(self):
-        """Run all backend tests"""
-        print("🧪 Starting Coffee Shop Management Game Backend Tests")
-        print(f"🌐 Testing API at: {self.api_url}")
+        """Запустить все тесты бэкенда"""
+        print("🧪 Запуск тестов бэкенда игры Управление кофейней")
+        print(f"🌐 Тестирование API по адресу: {self.api_url}")
         print("=" * 60)
         
-        # Basic API tests
+        # Основные API тесты
         self.test_root_endpoint()
         self.test_game_data()
         
-        # Game lifecycle tests
+        # Тесты жизненного цикла игры
         self.test_new_game()
         self.test_get_game()
         
-        # Game operations tests
+        # Тесты операций игры
         self.test_buy_ingredients()
         self.test_set_prices()
         self.test_toggle_menu_item()
         self.test_buy_upgrade()
         self.test_play_day()
         
-        # Achievement and events tests
+        # Тесты достижений и событий
         self.test_random_events_count()
         
-        # Data retrieval tests
+        # Тесты получения данных
         self.test_get_stats()
         self.test_get_log()
         self.test_list_saves()
         
-        # Cleanup and error tests
+        # Очистка и тесты ошибок
         self.test_error_cases()
         self.test_delete_game()
         
-        # Print summary
+        # Вывести сводку
         print("=" * 60)
         print(f"📊 Tests completed: {self.tests_passed}/{self.tests_run} passed")
         

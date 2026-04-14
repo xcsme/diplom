@@ -10,13 +10,13 @@ export default function MainScreen({ gameState, gameData, onPlayDay, loading }) 
   const { inventory, menu_available, menu_prices, reputation, purchased_upgrades } = gameState;
   const { menu_items, ingredients } = gameData;
 
-  // Check low stock warnings
+  // Проверить предупреждения о низких запасах
   const lowStock = ingredients.filter((ing) => (inventory[ing.id] || 0) < 5);
   const activeMenu = menu_items.filter((m) => menu_available[m.id]);
 
   return (
     <div className="p-5 h-full flex flex-col animate-fadeIn" data-testid="main-screen">
-      {/* Header */}
+      {/* Заголовок */}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2
@@ -45,7 +45,7 @@ export default function MainScreen({ gameState, gameData, onPlayDay, loading }) 
       </div>
 
       <div className="grid grid-cols-2 gap-5 flex-1">
-        {/* Active Menu */}
+        {/* Активное меню */}
         <div
           className="rounded-xl p-4"
           style={{ background: 'var(--coffee-surface)', border: '1px solid var(--coffee-border)' }}
@@ -91,7 +91,7 @@ export default function MainScreen({ gameState, gameData, onPlayDay, loading }) 
           </div>
         </div>
 
-        {/* Stock Overview */}
+        {/* Обзор запасов */}
         <div
           className="rounded-xl p-4"
           style={{ background: 'var(--coffee-surface)', border: '1px solid var(--coffee-border)' }}
@@ -135,7 +135,7 @@ export default function MainScreen({ gameState, gameData, onPlayDay, loading }) 
           </div>
         </div>
 
-        {/* Info Cards */}
+        {/* Информационные карточки */}
         <div
           className="rounded-xl p-4"
           style={{ background: 'var(--coffee-surface)', border: '1px solid var(--coffee-border)' }}
@@ -180,7 +180,7 @@ export default function MainScreen({ gameState, gameData, onPlayDay, loading }) 
           </div>
         </div>
 
-        {/* Warnings */}
+        {/* Предупреждения */}
         <div
           className="rounded-xl p-4"
           style={{ background: 'var(--coffee-surface)', border: '1px solid var(--coffee-border)' }}

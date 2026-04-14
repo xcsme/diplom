@@ -201,7 +201,7 @@ def create_initial_game_state(player_name: str) -> dict:
         "money": 5000.0,
         "reputation": 100,
         "current_day": 1,
-        "status": "active",  # active, won, lost
+        "status": "active",  # активная, победа, поражение
         "inventory": {i["id"]: 20 for i in INGREDIENTS},
         "menu_prices": {m["id"]: m["base_price"] for m in MENU_ITEMS},
         "menu_available": {m["id"]: m["is_available"] for m in MENU_ITEMS},

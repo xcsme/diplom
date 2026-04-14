@@ -114,7 +114,7 @@ export default function WarehouseScreen({ gameState, gameData, onBuyIngredients,
                 </TooltipProvider>
               </div>
 
-              {/* Stock bar */}
+              {/* Полоса запасов */}
               <div className="w-full h-2 rounded-full mb-3" style={{ background: 'var(--coffee-cream)' }}>
                 <div
                   className="h-full rounded-full transition-all"

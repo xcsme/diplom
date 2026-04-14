@@ -90,7 +90,7 @@ export default function StatsScreen({ gameId, API }) {
             </div>
           ) : (
             <>
-              {/* Revenue Chart */}
+              {/* График выручки */}
               <div className="chart-container" data-testid="revenue-chart">
                 <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--coffee-secondary)' }}>
                   <TrendingUp size={14} />
@@ -108,7 +108,7 @@ export default function StatsScreen({ gameId, API }) {
                 </ResponsiveContainer>
               </div>
 
-              {/* Reputation Chart */}
+              {/* График репутации */}
               <div className="chart-container" data-testid="reputation-chart">
                 <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--coffee-secondary)' }}>
                   <TrendingUp size={14} />

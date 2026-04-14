@@ -73,7 +73,7 @@ export default function MenuScreen({ gameState, gameData, onSetPrices, onToggleM
           const margin = cost > 0 ? ((profit / cost) * 100).toFixed(0) : 0;
           const isProfitable = profit > 0;
 
-          // Recipe display
+          // Отображение рецепта
           const recipeText = Object.entries(item.recipe || {})
             .map(([ingId, qty]) => {
               const ing = gameData.ingredients.find((i) => i.id === ingId);

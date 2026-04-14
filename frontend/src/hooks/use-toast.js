@@ -1,5 +1,5 @@
 "use client";
-// Inspired by react-hot-toast library
+// Вдохновлено библиотекой react-hot-toast
 import * as React from "react"
 
 const TOAST_LIMIT = 1
@@ -55,8 +55,8 @@ export const reducer = (state, action) => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
+      // ! Побочные эффекты ! - Это можно извлечь в отдельное действие dismissToast(),
+      // но я оставлю это здесь для простоты
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
