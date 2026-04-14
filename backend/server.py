@@ -122,7 +122,67 @@ RANDOM_EVENTS = [
      "effect": {"ingredient_price": {"milk": 1.4}}, "probability": 0.06},
     {"id": "competition", "name": "Новая кофейня рядом", "description": "Рядом открылась конкурирующая кофейня. Репутация снижена на 20.",
      "effect": {"rep_change": -20}, "probability": 0.05},
+    {"id": "vip_guest", "name": "VIP-гость", "description": "Известная личность зашла выпить кофе и выложила фото! Репутация +30.",
+     "effect": {"rep_change": 30}, "probability": 0.05},
+    {"id": "power_outage", "name": "Перебои с электричеством", "description": "Кратковременное отключение света. Скорость обслуживания снижена.",
+     "effect": {"speed_multiplier": 0.7}, "probability": 0.05},
+    {"id": "coffee_festival", "name": "Фестиваль кофе в городе", "description": "В городе проходит кофейный фестиваль! Больше посетителей и выше репутация.",
+     "effect": {"visitor_multiplier": 1.6, "rep_change": 15}, "probability": 0.04},
+    {"id": "health_inspection", "name": "Проверка СЭС", "description": "Внеплановая проверка санитарной службы. Если запасы низкие — штраф.",
+     "effect": {"rep_change": -10}, "probability": 0.05},
+    {"id": "celebrity_post", "name": "Пост блогера", "description": "Популярный блогер написал хороший отзыв! Приток посетителей.",
+     "effect": {"visitor_multiplier": 1.4, "rep_change": 20}, "probability": 0.04},
+    {"id": "sugar_drop", "name": "Падение цен на сахар", "description": "Сахар подешевел на 50%! Отличный день для закупок.",
+     "effect": {"ingredient_price": {"sugar": 0.5}}, "probability": 0.05},
+    {"id": "barista_sick", "name": "Бариста заболел", "description": "Ваш бариста приболел. Качество напитков немного снижено сегодня.",
+     "effect": {"speed_multiplier": 0.8}, "probability": 0.05},
+    {"id": "sunny_weekend", "name": "Солнечный выходной", "description": "Прекрасная погода привлекла гуляющих! Больше посетителей.",
+     "effect": {"visitor_multiplier": 1.3}, "probability": 0.06},
 ]
+
+# ==================== ACHIEVEMENTS ====================
+
+ACHIEVEMENTS = [
+    {"id": "first_day", "name": "Первый рабочий день", "description": "Завершите первый день работы", "icon": "sunrise",
+     "condition": lambda s: s.get("current_day", 1) > 1},
+    {"id": "ten_days", "name": "Опытный управляющий", "description": "Проработайте 10 дней", "icon": "calendar-check",
+     "condition": lambda s: s.get("current_day", 1) > 10},
+    {"id": "thirty_days", "name": "Месяц в деле", "description": "Проработайте 30 дней", "icon": "calendar-heart",
+     "condition": lambda s: s.get("current_day", 1) > 30},
+    {"id": "hundred_customers", "name": "Сотня клиентов", "description": "Обслужите 100 клиентов суммарно", "icon": "users",
+     "condition": lambda s: s.get("total_customers", 0) >= 100},
+    {"id": "five_hundred_customers", "name": "Народная кофейня", "description": "Обслужите 500 клиентов суммарно", "icon": "heart-handshake",
+     "condition": lambda s: s.get("total_customers", 0) >= 500},
+    {"id": "first_upgrade", "name": "Первое улучшение", "description": "Купите первое улучшение", "icon": "sparkles",
+     "condition": lambda s: len(s.get("purchased_upgrades", [])) >= 1},
+    {"id": "all_upgrades", "name": "Полный апгрейд", "description": "Купите все улучшения", "icon": "crown",
+     "condition": lambda s: len(s.get("purchased_upgrades", [])) >= len(UPGRADES)},
+    {"id": "ten_thousand", "name": "Первые 10 тысяч", "description": "Накопите 10 000 ₽", "icon": "banknote",
+     "condition": lambda s: s.get("money", 0) >= 10000},
+    {"id": "fifty_thousand", "name": "Полпути к мечте", "description": "Накопите 50 000 ₽", "icon": "gem",
+     "condition": lambda s: s.get("money", 0) >= 50000},
+    {"id": "reputation_500", "name": "Уважаемое заведение", "description": "Достигните репутации 500", "icon": "award",
+     "condition": lambda s: s.get("reputation", 0) >= 500},
+    {"id": "reputation_max", "name": "Легенда города", "description": "Достигните максимальной репутации 1000", "icon": "trophy",
+     "condition": lambda s: s.get("reputation", 0) >= 1000},
+    {"id": "perfect_day", "name": "Идеальный день", "description": "Завершите день со 100% удовлетворённостью", "icon": "star",
+     "condition": lambda s: s.get("had_perfect_day", False)},
+    {"id": "event_survivor", "name": "Бывалый", "description": "Переживите 10 случайных событий", "icon": "shield",
+     "condition": lambda s: s.get("total_events", 0) >= 10},
+    {"id": "big_spender", "name": "Щедрый закупщик", "description": "Потратьте 20 000 ₽ на закупки суммарно", "icon": "shopping-cart",
+     "condition": lambda s: s.get("total_spent_on_ingredients", 0) >= 20000},
+    {"id": "profit_king", "name": "Король прибыли", "description": "Заработайте 5 000 ₽ за один день", "icon": "trending-up",
+     "condition": lambda s: s.get("best_daily_revenue", 0) >= 5000},
+]
+
+def check_achievements(game_state: dict) -> list:
+    """Check which new achievements have been unlocked."""
+    current = set(game_state.get("achievements", []))
+    newly_unlocked = []
+    for ach in ACHIEVEMENTS:
+        if ach["id"] not in current and ach["condition"](game_state):
+            newly_unlocked.append(ach["id"])
+    return newly_unlocked
 
 # ==================== MODELS ====================
 
@@ -156,6 +216,13 @@ def create_initial_game_state(player_name: str) -> dict:
         "menu_prices": {m["id"]: m["base_price"] for m in MENU_ITEMS},
         "menu_available": {m["id"]: m["is_available"] for m in MENU_ITEMS},
         "purchased_upgrades": [],
+        "achievements": [],
+        "total_customers": 0,
+        "total_revenue": 0,
+        "total_events": 0,
+        "total_spent_on_ingredients": 0,
+        "best_daily_revenue": 0,
+        "had_perfect_day": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "last_save": datetime.now(timezone.utc).isoformat(),
     }
@@ -363,11 +430,12 @@ async def root():
 
 @api_router.get("/game/data")
 async def get_game_data():
-    """Return static game data: ingredients, menu, upgrades"""
+    """Return static game data: ingredients, menu, upgrades, achievements"""
     return {
         "ingredients": INGREDIENTS,
         "menu_items": [{**m, "cost": calculate_ingredient_cost(m)} for m in MENU_ITEMS],
         "upgrades": UPGRADES,
+        "achievements": [{"id": a["id"], "name": a["name"], "description": a["description"], "icon": a["icon"]} for a in ACHIEVEMENTS],
     }
 
 @api_router.post("/game/new")
@@ -429,12 +497,25 @@ async def buy_ingredients(game_id: str, req: BuyIngredientsRequest):
         raise HTTPException(status_code=400, detail="Недостаточно средств")
 
     new_money = round(state["money"] - total_cost, 2)
+    new_total_spent = round(state.get("total_spent_on_ingredients", 0) + total_cost, 2)
     await db.game_states.update_one(
         {"id": game_id},
-        {"$set": {"inventory": new_inventory, "money": new_money, "last_save": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {
+            "inventory": new_inventory,
+            "money": new_money,
+            "total_spent_on_ingredients": new_total_spent,
+            "last_save": datetime.now(timezone.utc).isoformat(),
+        }}
     )
 
-    return {"money": new_money, "inventory": new_inventory, "total_cost": round(total_cost, 2)}
+    # Check achievements after purchase
+    updated = {**state, "money": new_money, "inventory": new_inventory, "total_spent_on_ingredients": new_total_spent}
+    new_achs = check_achievements(updated)
+    if new_achs:
+        all_achs = state.get("achievements", []) + new_achs
+        await db.game_states.update_one({"id": game_id}, {"$set": {"achievements": all_achs}})
+
+    return {"money": new_money, "inventory": new_inventory, "total_cost": round(total_cost, 2), "new_achievements": new_achs}
 
 @api_router.post("/game/{game_id}/set-prices")
 async def set_prices(game_id: str, req: SetPricesRequest):
@@ -506,7 +587,14 @@ async def buy_upgrade(game_id: str, req: BuyUpgradeRequest):
 
     await db.game_states.update_one({"id": game_id}, {"$set": update_data})
 
-    result = {"money": new_money, "purchased_upgrades": new_upgrades}
+    # Check achievements after upgrade
+    updated = {**state, **update_data}
+    new_achs = check_achievements(updated)
+    if new_achs:
+        all_achs = updated.get("achievements", []) + new_achs
+        await db.game_states.update_one({"id": game_id}, {"$set": {"achievements": all_achs}})
+
+    result = {"money": new_money, "purchased_upgrades": new_upgrades, "new_achievements": new_achs}
     if "reputation" in update_data:
         result["reputation"] = update_data["reputation"]
     return result
@@ -521,7 +609,25 @@ async def play_day(game_id: str):
 
     report, updated_state = simulate_day(state)
 
+    # Update cumulative tracking fields
+    updated_state["total_customers"] = state.get("total_customers", 0) + report["served"]
+    updated_state["total_revenue"] = round(state.get("total_revenue", 0) + report["revenue"], 2)
+    updated_state["total_events"] = state.get("total_events", 0) + len(report["events"])
+    updated_state["best_daily_revenue"] = max(state.get("best_daily_revenue", 0), report["revenue"])
+    if report["avg_satisfaction"] >= 0.99 and report["served"] > 0:
+        updated_state["had_perfect_day"] = True
+    else:
+        updated_state["had_perfect_day"] = state.get("had_perfect_day", False)
+
     await db.game_states.update_one({"id": game_id}, {"$set": updated_state})
+
+    # Check achievements
+    merged = {**state, **updated_state}
+    new_achs = check_achievements(merged)
+    if new_achs:
+        all_achs = state.get("achievements", []) + new_achs
+        await db.game_states.update_one({"id": game_id}, {"$set": {"achievements": all_achs}})
+        updated_state["achievements"] = all_achs
 
     # Save daily stats
     stat_doc = {
@@ -557,6 +663,7 @@ async def play_day(game_id: str):
     if logs:
         await db.game_logs.insert_many(logs)
 
+    report["new_achievements"] = new_achs
     return {"report": report, "game_state": {**state, **updated_state}}
 
 @api_router.get("/game/{game_id}/stats")

@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { Coins, Star, CalendarDays, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { Coins, Star, CalendarDays, Trophy, Volume2, VolumeX, LogOut } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { playClick } from '../../utils/SoundManager';
 
-export default function TopBar({ money, reputation, day, status, soundOn, onToggleSound }) {
+export default function TopBar({ money, reputation, day, status, soundOn, onToggleSound, onExit }) {
   const winProgress = Math.min(100, (money / 100000) * 100);
 
   return (
@@ -93,6 +92,26 @@ export default function TopBar({ money, reputation, day, status, soundOn, onTogg
             </TooltipTrigger>
             <TooltipContent>
               <p>Прогресс до победы: {money.toLocaleString('ru-RU')} / 100 000 ₽</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <div className="w-px h-6" style={{ background: 'var(--coffee-border)' }} />
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => { playClick(); onExit(); }}
+                className="p-1.5 rounded-lg transition-all hover:bg-red-50"
+                style={{ color: 'var(--coffee-text-muted)' }}
+                data-testid="exit-to-menu-btn"
+              >
+                <LogOut size={16} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Выйти в главное меню</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

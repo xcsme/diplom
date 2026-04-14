@@ -9,15 +9,16 @@ import WarehouseScreen from '@/components/game/WarehouseScreen';
 import MenuScreen from '@/components/game/MenuScreen';
 import UpgradesScreen from '@/components/game/UpgradesScreen';
 import StatsScreen from '@/components/game/StatsScreen';
+import AchievementsScreen from '@/components/game/AchievementsScreen';
 import DailyReport from '@/components/game/DailyReport';
 import GameOverModal from '@/components/game/GameOverModal';
 
 import { Toaster, toast } from 'sonner';
 import {
-  PlayCircle, Package, UtensilsCrossed, Wrench, BarChart3
+  PlayCircle, Package, UtensilsCrossed, Wrench, BarChart3, Award
 } from 'lucide-react';
 import {
-  initAudio, setMuted, getMuted, startAmbient,
+  initAudio, setMuted, getMuted, startAmbient, stopAmbient,
   playClick, playCoin, playSpend, playSuccess, playError,
   playEvent, playDayStart, playDayEnd, playWin, playLose, playUpgrade
 } from '@/utils/SoundManager';
@@ -30,6 +31,7 @@ const TABS = [
   { id: 'warehouse', label: 'Склад', icon: Package },
   { id: 'menu', label: 'Меню', icon: UtensilsCrossed },
   { id: 'upgrades', label: 'Улучшения', icon: Wrench },
+  { id: 'achievements', label: 'Достижения', icon: Award },
   { id: 'stats', label: 'Статистика', icon: BarChart3 },
 ];
 
@@ -48,6 +50,30 @@ function App() {
     setSoundOn(newVal);
     setMuted(!newVal);
   }, [soundOn]);
+
+  const showAchievementToasts = useCallback((newAchs) => {
+    if (!newAchs || newAchs.length === 0 || !gameData) return;
+    const achList = gameData.achievements || [];
+    newAchs.forEach((achId, i) => {
+      const ach = achList.find(a => a.id === achId);
+      if (ach) {
+        setTimeout(() => {
+          toast.success(`Достижение: ${ach.name}!`, { description: ach.description });
+          playUpgrade();
+        }, i * 600);
+      }
+    });
+  }, [gameData]);
+
+  const handleExit = useCallback(() => {
+    playClick();
+    setGameState(null);
+    setStarted(false);
+    setDailyReport(null);
+    setActiveTab('main');
+    stopAmbient();
+    axios.get(`${API}/game/saves/list`).then((res) => setSaves(res.data)).catch(console.error);
+  }, []);
 
   // Fetch static game data
   useEffect(() => {
@@ -124,6 +150,11 @@ function App() {
       setDailyReport(report);
       setGameState(res.data.game_state);
 
+      // Show achievement toasts
+      if (report.new_achievements && report.new_achievements.length > 0) {
+        showAchievementToasts(report.new_achievements);
+      }
+
       // Play sound based on result
       setTimeout(() => {
         if (report.events && report.events.length > 0) playEvent();
@@ -155,6 +186,10 @@ function App() {
       }));
       toast.success(`Закупка: -${res.data.total_cost.toFixed(0)} ₽`);
       playSpend();
+      if (res.data.new_achievements?.length > 0) {
+        showAchievementToasts(res.data.new_achievements);
+        refreshGameState(gameState.id);
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка при закупке');
       playError();
@@ -206,6 +241,10 @@ function App() {
       const upgrade = gameData?.upgrades?.find((u) => u.id === upgradeId);
       toast.success(`Куплено: ${upgrade?.name || upgradeId}`);
       playUpgrade();
+      if (res.data.new_achievements?.length > 0) {
+        showAchievementToasts(res.data.new_achievements);
+        refreshGameState(gameState.id);
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка при покупке');
       playError();
@@ -218,6 +257,7 @@ function App() {
     setStarted(false);
     setDailyReport(null);
     setActiveTab('main');
+    stopAmbient();
     axios.get(`${API}/game/saves/list`).then((res) => setSaves(res.data)).catch(console.error);
   };
 
@@ -262,6 +302,8 @@ function App() {
         );
       case 'stats':
         return <StatsScreen gameId={gameState?.id} API={API} />;
+      case 'achievements':
+        return <AchievementsScreen gameState={gameState} gameData={gameData} />;
       default:
         return null;
     }
@@ -288,6 +330,7 @@ function App() {
               status={gameState?.status || 'active'}
               soundOn={soundOn}
               onToggleSound={handleToggleSound}
+              onExit={handleExit}
             />
 
             {/* Tab Navigation */}
