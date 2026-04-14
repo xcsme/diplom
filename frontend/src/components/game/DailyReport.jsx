@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { TrendingUp, TrendingDown, Users, Coins, Star, Zap } from 'lucide-react';
@@ -34,6 +34,7 @@ export default function DailyReport({ report, onClose, gameData }) {
           >
             Итоги дня {report.day}
           </DialogTitle>
+          <DialogDescription className="sr-only">Отчёт о результатах рабочего дня</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">

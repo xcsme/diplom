@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Trophy, Frown, RotateCcw } from 'lucide-react';
 
@@ -26,6 +26,7 @@ export default function GameOverModal({ status, gameState, onNewGame }) {
           >
             {isWon ? 'Победа!' : 'Игра окончена'}
           </DialogTitle>
+          <DialogDescription className="sr-only">Результат игры</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center py-4">
