@@ -1,0 +1,144 @@
+/* Game Window Container */
+.game-window {
+  width: 1024px;
+  height: 768px;
+  background: var(--coffee-bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab navigation */
+.tab-nav {
+  display: flex;
+  gap: 2px;
+  background: var(--coffee-latte);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--coffee-text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--coffee-secondary);
+}
+
+.tab-btn.active {
+  background: var(--coffee-surface);
+  color: var(--coffee-secondary);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(62, 39, 35, 0.1);
+}
+
+/* Resource badge */
+.resource-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--coffee-surface);
+  border: 1px solid var(--coffee-border);
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.resource-badge.money {
+  color: var(--coffee-success);
+}
+.resource-badge.reputation {
+  color: var(--coffee-warning);
+}
+.resource-badge.day {
+  color: var(--coffee-primary);
+}
+
+/* Ingredient card */
+.ingredient-card {
+  background: var(--coffee-surface);
+  border: 1px solid var(--coffee-border);
+  border-radius: 12px;
+  padding: 14px;
+  transition: all 0.2s ease;
+}
+.ingredient-card:hover {
+  border-color: var(--coffee-primary);
+  box-shadow: 0 4px 12px rgba(141, 110, 99, 0.1);
+}
+
+/* Upgrade tree node */
+.upgrade-node {
+  background: var(--coffee-surface);
+  border: 2px solid var(--coffee-border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.upgrade-node:hover:not(.purchased):not(.locked) {
+  border-color: var(--coffee-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(141, 110, 99, 0.15);
+}
+.upgrade-node.purchased {
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+  border-color: var(--coffee-success);
+}
+.upgrade-node.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.upgrade-node.available {
+  border-color: var(--coffee-primary);
+  animation: pulse-glow 2s infinite;
+}
+
+/* Event popup */
+.event-popup {
+  animation: fadeIn 0.4s ease-out;
+  background: var(--coffee-surface);
+  border: 2px solid var(--coffee-warning);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(62, 39, 35, 0.2);
+}
+
+/* Stats chart container */
+.chart-container {
+  background: var(--coffee-surface);
+  border: 1px solid var(--coffee-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+/* Start screen */
+.start-screen {
+  background: linear-gradient(180deg, var(--coffee-cream) 0%, var(--coffee-bg) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}

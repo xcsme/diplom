@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --coffee-bg: #FDFBF7;
+  --coffee-surface: #FFFFFF;
+  --coffee-primary: #8D6E63;
+  --coffee-primary-hover: #6D4C41;
+  --coffee-secondary: #3E2723;
+  --coffee-accent: #D84315;
+  --coffee-success: #558B2F;
+  --coffee-danger: #C62828;
+  --coffee-warning: #F9A825;
+  --coffee-border: #D7CCC8;
+  --coffee-text: #1E130C;
+  --coffee-text-secondary: #5D4037;
+  --coffee-text-muted: #8D6E63;
+  --coffee-latte: #E8DCC4;
+  --coffee-cream: #F5F0E8;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #2C1810;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+@layer base {
+  :root {
+    --background: 37 50% 98%;
+    --foreground: 20 60% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 60% 8%;
+    --popover: 37 50% 98%;
+    --popover-foreground: 20 60% 8%;
+    --primary: 16 18% 47%;
+    --primary-foreground: 37 50% 98%;
+    --secondary: 16 30% 14%;
+    --secondary-foreground: 37 50% 98%;
+    --muted: 28 30% 90%;
+    --muted-foreground: 16 30% 35%;
+    --accent: 14 78% 35%;
+    --accent-foreground: 37 50% 98%;
+    --destructive: 0 72% 47%;
+    --destructive-foreground: 37 50% 98%;
+    --border: 16 20% 82%;
+    --input: 16 20% 82%;
+    --ring: 16 18% 47%;
+    --chart-1: 16 18% 47%;
+    --chart-2: 68 55% 36%;
+    --chart-3: 14 78% 35%;
+    --chart-4: 45 96% 56%;
+    --chart-5: 16 30% 14%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply text-foreground;
+  }
+}
+
+@layer base {
+  [data-debug-wrapper="true"] {
+    display: contents !important;
+  }
+  [data-debug-wrapper="true"] > * {
+    margin-left: inherit;
+    margin-right: inherit;
+    margin-top: inherit;
+    margin-bottom: inherit;
+    padding-left: inherit;
+    padding-right: inherit;
+    padding-top: inherit;
+    padding-bottom: inherit;
+    column-gap: inherit;
+    row-gap: inherit;
+    gap: inherit;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--coffee-cream);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--coffee-primary);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--coffee-primary-hover);
+}
+
+/* Game animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(141, 110, 99, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(141, 110, 99, 0.6); }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+.game-card {
+  transition: all 0.2s ease;
+}
+.game-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(62, 39, 35, 0.1);
+}

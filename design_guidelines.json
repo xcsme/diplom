@@ -1,0 +1,85 @@
+{
+  "theme": "light",
+  "archetype": "Organic & Earthy",
+  "design_philosophy": "Warm, cozy, inviting aesthetic. The UI should feel like a comfortable coffee shop, avoiding sterile corporate or overly dark gaming themes. Colors are drawn from coffee ingredients: espresso, latte, warm sand.",
+  "colors": {
+    "background": "#FDFBF7",
+    "surface": "#FFFFFF",
+    "primary": "#8D6E63",
+    "primary_hover": "#6D4C41",
+    "secondary": "#3E2723",
+    "accent": "#D84315",
+    "success": "#558B2F",
+    "danger": "#C62828",
+    "warning": "#F9A825",
+    "border": "#D7CCC8",
+    "text_primary": "#1E130C",
+    "text_secondary": "#5D4037",
+    "text_muted": "#8D6E63"
+  },
+  "typography": {
+    "heading_font": "Playfair Display",
+    "body_font": "Outfit",
+    "h1": "text-4xl sm:text-5xl font-bold tracking-tight text-[#3E2723]",
+    "h2": "text-2xl sm:text-3xl font-semibold tracking-tight text-[#3E2723]",
+    "h3": "text-xl sm:text-2xl font-medium text-[#3E2723]",
+    "body": "text-base leading-relaxed text-[#1E130C]",
+    "small": "text-sm text-[#5D4037]",
+    "label": "text-xs font-semibold tracking-wider uppercase text-[#8D6E63]"
+  },
+  "layout_and_spacing": {
+    "window_size": "fixed max-w-[1024px] max-h-[768px] mx-auto overflow-hidden",
+    "container_padding": "p-6",
+    "grid_system": "Use CSS Grid with gap-6 for dashboards and layouts. The 'Control Room' grid is ideal for the Statistics and Warehouse screens.",
+    "border_radius": "rounded-xl for cards, rounded-lg for buttons, rounded-2xl for main modals",
+    "shadows": "shadow-[0_8px_30px_rgba(62,39,35,0.06)] for subtle depth on cards."
+  },
+  "components": {
+    "buttons": "Softly rounded, solid background for primary (bg-[#8D6E63] text-white hover:bg-[#6D4C41]), outline for secondary (border-[#8D6E63] text-[#8D6E63] hover:bg-[#F5F5DC]). Must include transition-all duration-200.",
+    "cards": "bg-[#FFFFFF] border border-[#D7CCC8] rounded-xl shadow-sm p-6.",
+    "inputs": "Shadcn inputs with border-[#D7CCC8] focus:ring-[#8D6E63] focus:border-[#8D6E63] rounded-lg bg-[#FDFBF7].",
+    "tabs": "Shadcn tabs heavily customized. Active tab should have text-[#3E2723] and border-b-2 border-[#8D6E63] or soft rounded bg-[#E8DCC4].",
+    "modals": "Shadcn dialogs. Use backdrop-blur-sm with bg-black/20 for the overlay. Dialog content bg-[#FDFBF7] rounded-2xl border-[#D7CCC8]."
+  },
+  "animation_and_motion": {
+    "hover": "Subtle transform translate-y-[-2px] and shadow elevation for interactive cards.",
+    "transitions": "transition-all duration-300 ease-in-out for layout changes.",
+    "events": "Use Framer Motion or simple CSS animations for random event popups (scale-in)."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "usage": "Use icons for resources (Coins, Star, Calendar), ingredients (Package, CupSoda, Wheat), and navigation."
+  },
+  "media": {
+    "images": {
+      "coffee_shop_bg": {
+        "url": "https://images.unsplash.com/photo-1749996089724-268703b8c4dc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHwyfHx3YXJtJTIwY29mZmVlJTIwc2hvcCUyMGNvenklMjBpbnRlcmlvcnxlbnwwfHx8fDE3NzYxOTY3ODl8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Cozy cafe with baked goods, used for main game screen background or splash screen",
+        "placement": "Main Game Screen / Splash"
+      },
+      "latte_art": {
+        "url": "https://images.pexels.com/photos/4927237/pexels-photo-4927237.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Barista pouring latte art",
+        "placement": "Upgrades or Staff Screen header"
+      },
+      "coffee_beans": {
+        "url": "https://images.unsplash.com/photo-1650718158288-95e2d07c71ad?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxjb2ZmZWUlMjBiZWFucyUyMGVzcHJlc3NvJTIwY3VwfGVufDB8fHx8MTc3NjE5Njc4Mnww&ixlib=rb-4.1.0&q=85",
+        "description": "Coffee beans spilling",
+        "placement": "Warehouse or Purchases Screen header"
+      }
+    }
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure text colors (#1E130C, #5D4037) have sufficient contrast against #FDFBF7 and #FFFFFF.",
+    "testing_attributes": "All interactive elements, game actions, navigation tabs, and resource displays MUST include data-testid. Examples: data-testid='buy-ingredient-btn', data-testid='start-day-btn', data-testid='resource-money'."
+  },
+  "instructions_to_main_agent": [
+    "Build the application specifically as a fixed 1024x768 web window game (use max-w-[1024px] h-[768px] mx-auto on a wrapper).",
+    "Language must be entirely in Russian as per user requirements.",
+    "Implement the Top Resource Bar permanently visible with Money, Reputation, and Day counter.",
+    "Use Shadcn UI components but heavily override them with the warm, cozy color palette specified.",
+    "Do not use generic blue/gray SaaS colors. Always tint grays with warmth (e.g., #D7CCC8 for borders).",
+    "Ensure the win condition (100,000 coins) and loss condition (bankruptcy/0 reputation) are tracked and trigger a game over/win modal.",
+    "Use standard lucide-react icons where custom game graphics are missing."
+  ]
+}
