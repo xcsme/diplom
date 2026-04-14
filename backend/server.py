@@ -1,72 +1,579 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import random
+import math
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone
-
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+# ==================== GAME DATA ====================
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+INGREDIENTS = [
+    {"id": "coffee", "name": "Кофейные зёрна", "base_price": 50, "unit": "кг", "icon": "coffee"},
+    {"id": "milk", "name": "Молоко", "base_price": 30, "unit": "л", "icon": "milk"},
+    {"id": "sugar", "name": "Сахар", "base_price": 15, "unit": "кг", "icon": "candy"},
+    {"id": "syrup", "name": "Сиропы", "base_price": 80, "unit": "бут.", "icon": "wine"},
+    {"id": "pastry", "name": "Выпечка", "base_price": 40, "unit": "шт.", "icon": "croissant"},
+    {"id": "cups", "name": "Стаканы", "base_price": 10, "unit": "шт.", "icon": "cup-soda"},
+]
 
-# Add your routes to the router instead of directly to app
+MENU_ITEMS = [
+    {
+        "id": "espresso", "name": "Эспрессо", "base_price": 120, "prep_time": 2,
+        "popularity": 1.0, "is_available": True,
+        "recipe": {"coffee": 2, "sugar": 0.5, "cups": 1}
+    },
+    {
+        "id": "cappuccino", "name": "Капучино", "base_price": 180, "prep_time": 3,
+        "popularity": 1.2, "is_available": True,
+        "recipe": {"coffee": 2, "milk": 3, "sugar": 1, "cups": 1}
+    },
+    {
+        "id": "latte", "name": "Латте", "base_price": 200, "prep_time": 3,
+        "popularity": 1.3, "is_available": True,
+        "recipe": {"coffee": 1.5, "milk": 5, "sugar": 1, "cups": 1}
+    },
+    {
+        "id": "mocha", "name": "Мокко", "base_price": 220, "prep_time": 4,
+        "popularity": 0.9, "is_available": True,
+        "recipe": {"coffee": 2, "milk": 3, "syrup": 1, "sugar": 1, "cups": 1}
+    },
+    {
+        "id": "croissant", "name": "Круассан", "base_price": 100, "prep_time": 1,
+        "popularity": 1.1, "is_available": True,
+        "recipe": {"pastry": 1}
+    },
+    {
+        "id": "muffin", "name": "Шоколадный маффин", "base_price": 90, "prep_time": 1,
+        "popularity": 0.8, "is_available": True,
+        "recipe": {"pastry": 1, "sugar": 0.5}
+    },
+]
+
+UPGRADES = [
+    {"id": "coffee_machine_2", "name": "Кофемашина ур.2", "type": "equipment", "cost": 3000,
+     "effect_type": "speed", "effect_value": 1.3, "required_upgrade_id": None,
+     "description": "Увеличивает скорость обслуживания на 30%"},
+    {"id": "coffee_machine_3", "name": "Кофемашина ур.3", "type": "equipment", "cost": 8000,
+     "effect_type": "speed", "effect_value": 1.5, "required_upgrade_id": "coffee_machine_2",
+     "description": "Увеличивает скорость обслуживания на 50%"},
+    {"id": "fridge_2", "name": "Холодильник ур.2", "type": "equipment", "cost": 2000,
+     "effect_type": "capacity", "effect_value": 1.5, "required_upgrade_id": None,
+     "description": "Увеличивает вместимость склада на 50%"},
+    {"id": "fridge_3", "name": "Холодильник ур.3", "type": "equipment", "cost": 5000,
+     "effect_type": "capacity", "effect_value": 2.0, "required_upgrade_id": "fridge_2",
+     "description": "Удваивает вместимость склада"},
+    {"id": "display_2", "name": "Витрина ур.2", "type": "equipment", "cost": 2500,
+     "effect_type": "quality", "effect_value": 1.2, "required_upgrade_id": None,
+     "description": "Повышает привлекательность выпечки на 20%"},
+    {"id": "barista_2", "name": "Бариста ур.2", "type": "staff", "cost": 4000,
+     "effect_type": "quality", "effect_value": 1.3, "required_upgrade_id": None,
+     "description": "Повышает качество напитков на 30%"},
+    {"id": "barista_3", "name": "Бариста ур.3", "type": "staff", "cost": 10000,
+     "effect_type": "quality", "effect_value": 1.5, "required_upgrade_id": "barista_2",
+     "description": "Повышает качество напитков на 50%"},
+    {"id": "manager", "name": "Менеджер", "type": "staff", "cost": 6000,
+     "effect_type": "auto_buy", "effect_value": 1, "required_upgrade_id": None,
+     "description": "Автозакуп ингредиентов перед началом дня"},
+    {"id": "marketing_1", "name": "Реклама в соцсетях", "type": "marketing", "cost": 1500,
+     "effect_type": "rep_bonus", "effect_value": 50, "required_upgrade_id": None,
+     "description": "Единоразовый бонус к репутации +50"},
+    {"id": "marketing_2", "name": "Статья в блоге", "type": "marketing", "cost": 3000,
+     "effect_type": "rep_bonus", "effect_value": 100, "required_upgrade_id": "marketing_1",
+     "description": "Единоразовый бонус к репутации +100"},
+    {"id": "marketing_3", "name": "Сотрудничество с блогером", "type": "marketing", "cost": 7000,
+     "effect_type": "rep_bonus", "effect_value": 200, "required_upgrade_id": "marketing_2",
+     "description": "Единоразовый бонус к репутации +200"},
+]
+
+RANDOM_EVENTS = [
+    {"id": "critic", "name": "Кофейный критик", "description": "Сегодня к вам заглянул известный кофейный критик! Репутация изменится сильнее.",
+     "effect": {"rep_multiplier": 2.0}, "probability": 0.08},
+    {"id": "machine_break", "name": "Поломка кофемашины", "description": "Кофемашина сломалась! Скорость обслуживания снижена на сегодня.",
+     "effect": {"speed_multiplier": 0.5}, "probability": 0.07},
+    {"id": "supplier_sale", "name": "Распродажа у поставщика", "description": "Сезонная распродажа! Скидка 30% на все закупки сегодня.",
+     "effect": {"buy_discount": 0.3}, "probability": 0.08},
+    {"id": "flashmob", "name": "Флешмоб в соцсетях", "description": "Ваша кофейня стала вирусной! Временный приток посетителей.",
+     "effect": {"visitor_multiplier": 1.8}, "probability": 0.06},
+    {"id": "rain", "name": "Дождливый день", "description": "Из-за дождя меньше людей на улице. Посетителей меньше обычного.",
+     "effect": {"visitor_multiplier": 0.6}, "probability": 0.08},
+    {"id": "holiday", "name": "Праздничный день", "description": "Сегодня праздник! Больше посетителей, но они готовы платить больше.",
+     "effect": {"visitor_multiplier": 1.5, "price_tolerance": 1.3}, "probability": 0.05},
+    {"id": "milk_price", "name": "Рост цен на молоко", "description": "Цены на молоко выросли на 40%. Закупки молока дороже.",
+     "effect": {"ingredient_price": {"milk": 1.4}}, "probability": 0.06},
+    {"id": "competition", "name": "Новая кофейня рядом", "description": "Рядом открылась конкурирующая кофейня. Репутация снижена на 20.",
+     "effect": {"rep_change": -20}, "probability": 0.05},
+]
+
+# ==================== MODELS ====================
+
+class NewGameRequest(BaseModel):
+    player_name: str = "Игрок"
+
+class BuyIngredientsRequest(BaseModel):
+    purchases: Dict[str, int]  # ingredient_id -> quantity
+
+class SetPricesRequest(BaseModel):
+    prices: Dict[str, float]  # menu_item_id -> price
+
+class ToggleMenuItemRequest(BaseModel):
+    item_id: str
+    is_available: bool
+
+class BuyUpgradeRequest(BaseModel):
+    upgrade_id: str
+
+# ==================== HELPER FUNCTIONS ====================
+
+def create_initial_game_state(player_name: str) -> dict:
+    return {
+        "id": str(uuid.uuid4()),
+        "player_name": player_name,
+        "money": 5000.0,
+        "reputation": 100,
+        "current_day": 1,
+        "status": "active",  # active, won, lost
+        "inventory": {i["id"]: 20 for i in INGREDIENTS},
+        "menu_prices": {m["id"]: m["base_price"] for m in MENU_ITEMS},
+        "menu_available": {m["id"]: m["is_available"] for m in MENU_ITEMS},
+        "purchased_upgrades": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_save": datetime.now(timezone.utc).isoformat(),
+    }
+
+def get_speed_multiplier(upgrades: list) -> float:
+    m = 1.0
+    if "coffee_machine_3" in upgrades:
+        m = 1.5
+    elif "coffee_machine_2" in upgrades:
+        m = 1.3
+    return m
+
+def get_quality_multiplier(upgrades: list) -> float:
+    m = 1.0
+    if "barista_3" in upgrades:
+        m *= 1.5
+    elif "barista_2" in upgrades:
+        m *= 1.3
+    if "display_2" in upgrades:
+        m *= 1.2
+    return m
+
+def get_capacity_multiplier(upgrades: list) -> float:
+    if "fridge_3" in upgrades:
+        return 2.0
+    elif "fridge_2" in upgrades:
+        return 1.5
+    return 1.0
+
+def calculate_ingredient_cost(menu_item: dict) -> float:
+    cost = 0
+    for ing_id, qty in menu_item["recipe"].items():
+        for ing in INGREDIENTS:
+            if ing["id"] == ing_id:
+                cost += ing["base_price"] * qty
+                break
+    return cost
+
+def simulate_day(game_state: dict) -> dict:
+    money = game_state["money"]
+    reputation = game_state["reputation"]
+    inventory = dict(game_state["inventory"])
+    prices = game_state["menu_prices"]
+    available = game_state["menu_available"]
+    upgrades = game_state["purchased_upgrades"]
+    day = game_state["current_day"]
+
+    events_today = []
+    day_effects = {
+        "speed_multiplier": 1.0,
+        "visitor_multiplier": 1.0,
+        "rep_multiplier": 1.0,
+        "buy_discount": 0,
+        "price_tolerance": 1.0,
+        "ingredient_price": {},
+        "rep_change": 0,
+    }
+
+    # Generate random events
+    for event in RANDOM_EVENTS:
+        if random.random() < event["probability"]:
+            events_today.append(event)
+            for key, val in event["effect"].items():
+                if key == "ingredient_price":
+                    day_effects["ingredient_price"].update(val)
+                elif key in day_effects:
+                    if isinstance(day_effects[key], (int, float)):
+                        if "multiplier" in key:
+                            day_effects[key] *= val
+                        else:
+                            day_effects[key] += val
+
+    # Apply upgrade effects to speed
+    day_effects["speed_multiplier"] *= get_speed_multiplier(upgrades)
+    quality_mult = get_quality_multiplier(upgrades)
+
+    # Manager auto-buy
+    auto_buy_cost = 0
+    if "manager" in upgrades:
+        for ing in INGREDIENTS:
+            current = inventory.get(ing["id"], 0)
+            if current < 15:
+                to_buy = 25 - current
+                cost = to_buy * ing["base_price"]
+                auto_buy_cost += cost
+                inventory[ing["id"]] = current + to_buy
+        money -= auto_buy_cost
+
+    # Calculate base visitors: reputation-driven + randomness
+    base_visitors = max(5, int(reputation / 15) + random.randint(-3, 5))
+    visitors = max(1, int(base_visitors * day_effects["visitor_multiplier"]))
+
+    # Serving capacity per day (base 20, modified by speed)
+    max_serve = int(20 * day_effects["speed_multiplier"])
+
+    # Available menu items
+    available_items = [m for m in MENU_ITEMS if available.get(m["id"], False)]
+    if not available_items:
+        available_items = [MENU_ITEMS[0]]
+
+    served = 0
+    revenue = 0
+    total_satisfaction = 0
+    orders_detail = {}
+
+    for _ in range(min(visitors, max_serve)):
+        # Customer picks a random item weighted by popularity
+        weights = [m["popularity"] for m in available_items]
+        chosen = random.choices(available_items, weights=weights, k=1)[0]
+
+        # Check ingredients
+        can_make = True
+        for ing_id, qty_needed in chosen["recipe"].items():
+            if inventory.get(ing_id, 0) < qty_needed:
+                can_make = False
+                break
+
+        if not can_make:
+            continue
+
+        # Consume ingredients
+        for ing_id, qty_needed in chosen["recipe"].items():
+            inventory[ing_id] = round(inventory[ing_id] - qty_needed, 2)
+
+        # Revenue
+        sell_price = prices.get(chosen["id"], chosen["base_price"])
+        revenue += sell_price
+
+        # Satisfaction: based on price fairness and quality
+        cost = calculate_ingredient_cost(chosen)
+        price_ratio = sell_price / (cost * 2) if cost > 0 else 1
+        # If price is much higher than 2x cost, satisfaction drops
+        satisfaction = min(1.0, (1.0 / price_ratio) * quality_mult * day_effects["price_tolerance"])
+        satisfaction = max(0.1, min(1.0, satisfaction))
+        total_satisfaction += satisfaction
+
+        served += 1
+        orders_detail[chosen["id"]] = orders_detail.get(chosen["id"], 0) + 1
+
+    # Calculate reputation change
+    if served > 0:
+        avg_sat = total_satisfaction / served
+        # Reputation change: +/- based on satisfaction
+        rep_change = int((avg_sat - 0.5) * 20 * day_effects["rep_multiplier"])
+    else:
+        avg_sat = 0
+        rep_change = -5  # Penalty for not serving anyone
+
+    rep_change += day_effects["rep_change"]
+
+    # Unserved visitors hurt reputation
+    unserved = min(visitors, max_serve) - served
+    if unserved > 0:
+        rep_change -= int(unserved * 2)
+
+    new_reputation = max(0, min(1000, reputation + rep_change))
+    expenses = auto_buy_cost
+
+    # Check game status
+    new_money = money + revenue
+    status = "active"
+    if new_money <= 0:
+        status = "lost_money"
+    elif new_reputation <= 0:
+        status = "lost_reputation"
+    elif new_money >= 100000:
+        status = "won"
+
+    report = {
+        "day": day,
+        "visitors": visitors,
+        "served": served,
+        "unserved": unserved,
+        "revenue": round(revenue, 2),
+        "expenses": round(expenses, 2),
+        "profit": round(revenue - expenses, 2),
+        "avg_satisfaction": round(avg_sat, 2) if served > 0 else 0,
+        "rep_change": rep_change,
+        "old_reputation": reputation,
+        "new_reputation": new_reputation,
+        "old_money": round(money, 2),
+        "new_money": round(new_money, 2),
+        "orders": orders_detail,
+        "events": [{"id": e["id"], "name": e["name"], "description": e["description"]} for e in events_today],
+        "auto_buy_cost": round(auto_buy_cost, 2),
+        "status": status,
+    }
+
+    updated_state = {
+        "money": round(new_money, 2),
+        "reputation": new_reputation,
+        "current_day": day + 1,
+        "inventory": {k: round(v, 2) for k, v in inventory.items()},
+        "status": status,
+        "last_save": datetime.now(timezone.utc).isoformat(),
+    }
+
+    return report, updated_state
+
+# ==================== API ROUTES ====================
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Кофейня: Мастерская вкуса API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+@api_router.get("/game/data")
+async def get_game_data():
+    """Return static game data: ingredients, menu, upgrades"""
+    return {
+        "ingredients": INGREDIENTS,
+        "menu_items": [{**m, "cost": calculate_ingredient_cost(m)} for m in MENU_ITEMS],
+        "upgrades": UPGRADES,
+    }
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+@api_router.post("/game/new")
+async def new_game(req: NewGameRequest):
+    state = create_initial_game_state(req.player_name)
+    await db.game_states.insert_one({**state, "_id": state["id"]})
+    return state
 
-# Include the router in the main app
+@api_router.get("/game/{game_id}")
+async def get_game(game_id: str):
+    state = await db.game_states.find_one({"id": game_id}, {"_id": 0})
+    if not state:
+        raise HTTPException(status_code=404, detail="Игра не найдена")
+    return state
+
+@api_router.get("/game/saves/list")
+async def list_saves():
+    saves = await db.game_states.find(
+        {}, {"_id": 0, "id": 1, "player_name": 1, "current_day": 1, "money": 1, "reputation": 1, "status": 1, "last_save": 1}
+    ).sort("last_save", -1).to_list(20)
+    return saves
+
+@api_router.delete("/game/{game_id}")
+async def delete_game(game_id: str):
+    await db.game_states.delete_one({"id": game_id})
+    await db.game_logs.delete_many({"game_id": game_id})
+    await db.daily_stats.delete_many({"game_id": game_id})
+    return {"status": "deleted"}
+
+@api_router.post("/game/{game_id}/buy-ingredients")
+async def buy_ingredients(game_id: str, req: BuyIngredientsRequest):
+    state = await db.game_states.find_one({"id": game_id}, {"_id": 0})
+    if not state:
+        raise HTTPException(status_code=404, detail="Игра не найдена")
+    if state["status"] != "active":
+        raise HTTPException(status_code=400, detail="Игра окончена")
+
+    total_cost = 0
+    new_inventory = dict(state["inventory"])
+    capacity_mult = get_capacity_multiplier(state["purchased_upgrades"])
+    max_stock = int(100 * capacity_mult)
+
+    for ing_id, qty in req.purchases.items():
+        if qty <= 0:
+            continue
+        ing = next((i for i in INGREDIENTS if i["id"] == ing_id), None)
+        if not ing:
+            raise HTTPException(status_code=400, detail=f"Неизвестный ингредиент: {ing_id}")
+        current = new_inventory.get(ing_id, 0)
+        if current + qty > max_stock:
+            qty = max_stock - current
+            if qty <= 0:
+                continue
+        cost = ing["base_price"] * qty
+        total_cost += cost
+        new_inventory[ing_id] = round(current + qty, 2)
+
+    if total_cost > state["money"]:
+        raise HTTPException(status_code=400, detail="Недостаточно средств")
+
+    new_money = round(state["money"] - total_cost, 2)
+    await db.game_states.update_one(
+        {"id": game_id},
+        {"$set": {"inventory": new_inventory, "money": new_money, "last_save": datetime.now(timezone.utc).isoformat()}}
+    )
+
+    return {"money": new_money, "inventory": new_inventory, "total_cost": round(total_cost, 2)}
+
+@api_router.post("/game/{game_id}/set-prices")
+async def set_prices(game_id: str, req: SetPricesRequest):
+    state = await db.game_states.find_one({"id": game_id}, {"_id": 0})
+    if not state:
+        raise HTTPException(status_code=404, detail="Игра не найдена")
+
+    new_prices = dict(state["menu_prices"])
+    for item_id, price in req.prices.items():
+        if price < 0:
+            raise HTTPException(status_code=400, detail="Цена не может быть отрицательной")
+        new_prices[item_id] = round(price, 2)
+
+    await db.game_states.update_one(
+        {"id": game_id},
+        {"$set": {"menu_prices": new_prices, "last_save": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"menu_prices": new_prices}
+
+@api_router.post("/game/{game_id}/toggle-menu-item")
+async def toggle_menu_item(game_id: str, req: ToggleMenuItemRequest):
+    state = await db.game_states.find_one({"id": game_id}, {"_id": 0})
+    if not state:
+        raise HTTPException(status_code=404, detail="Игра не найдена")
+
+    new_available = dict(state["menu_available"])
+    new_available[req.item_id] = req.is_available
+
+    await db.game_states.update_one(
+        {"id": game_id},
+        {"$set": {"menu_available": new_available, "last_save": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"menu_available": new_available}
+
+@api_router.post("/game/{game_id}/buy-upgrade")
+async def buy_upgrade(game_id: str, req: BuyUpgradeRequest):
+    state = await db.game_states.find_one({"id": game_id}, {"_id": 0})
+    if not state:
+        raise HTTPException(status_code=404, detail="Игра не найдена")
+    if state["status"] != "active":
+        raise HTTPException(status_code=400, detail="Игра окончена")
+
+    upgrade = next((u for u in UPGRADES if u["id"] == req.upgrade_id), None)
+    if not upgrade:
+        raise HTTPException(status_code=400, detail="Неизвестное улучшение")
+
+    if req.upgrade_id in state["purchased_upgrades"]:
+        raise HTTPException(status_code=400, detail="Уже куплено")
+
+    if upgrade["required_upgrade_id"] and upgrade["required_upgrade_id"] not in state["purchased_upgrades"]:
+        raise HTTPException(status_code=400, detail="Сначала купите предыдущее улучшение")
+
+    if state["money"] < upgrade["cost"]:
+        raise HTTPException(status_code=400, detail="Недостаточно средств")
+
+    new_money = round(state["money"] - upgrade["cost"], 2)
+    new_upgrades = state["purchased_upgrades"] + [req.upgrade_id]
+
+    update_data = {
+        "money": new_money,
+        "purchased_upgrades": new_upgrades,
+        "last_save": datetime.now(timezone.utc).isoformat(),
+    }
+
+    # Apply marketing rep bonus immediately
+    if upgrade["effect_type"] == "rep_bonus":
+        new_rep = min(1000, state["reputation"] + int(upgrade["effect_value"]))
+        update_data["reputation"] = new_rep
+
+    await db.game_states.update_one({"id": game_id}, {"$set": update_data})
+
+    result = {"money": new_money, "purchased_upgrades": new_upgrades}
+    if "reputation" in update_data:
+        result["reputation"] = update_data["reputation"]
+    return result
+
+@api_router.post("/game/{game_id}/play-day")
+async def play_day(game_id: str):
+    state = await db.game_states.find_one({"id": game_id}, {"_id": 0})
+    if not state:
+        raise HTTPException(status_code=404, detail="Игра не найдена")
+    if state["status"] != "active":
+        raise HTTPException(status_code=400, detail="Игра окончена")
+
+    report, updated_state = simulate_day(state)
+
+    await db.game_states.update_one({"id": game_id}, {"$set": updated_state})
+
+    # Save daily stats
+    stat_doc = {
+        "game_id": game_id,
+        "day": report["day"],
+        "revenue": report["revenue"],
+        "expenses": report["expenses"],
+        "profit": report["profit"],
+        "customers_served": report["served"],
+        "avg_satisfaction": report["avg_satisfaction"],
+        "reputation": report["new_reputation"],
+        "money": report["new_money"],
+    }
+    await db.daily_stats.insert_one(stat_doc)
+
+    # Save log events
+    logs = []
+    for event in report["events"]:
+        logs.append({
+            "game_id": game_id,
+            "day": report["day"],
+            "event_type": "random_event",
+            "description": f"{event['name']}: {event['description']}",
+            "amount": 0,
+        })
+    logs.append({
+        "game_id": game_id,
+        "day": report["day"],
+        "event_type": "daily_report",
+        "description": f"День {report['day']}: выручка {report['revenue']}, обслужено {report['served']} из {report['visitors']}",
+        "amount": report["revenue"],
+    })
+    if logs:
+        await db.game_logs.insert_many(logs)
+
+    return {"report": report, "game_state": {**state, **updated_state}}
+
+@api_router.get("/game/{game_id}/stats")
+async def get_stats(game_id: str):
+    stats = await db.daily_stats.find(
+        {"game_id": game_id}, {"_id": 0}
+    ).sort("day", 1).to_list(1000)
+    return stats
+
+@api_router.get("/game/{game_id}/log")
+async def get_log(game_id: str):
+    logs = await db.game_logs.find(
+        {"game_id": game_id}, {"_id": 0}
+    ).sort("day", -1).to_list(500)
+    return logs
+
+# Include router
 app.include_router(api_router)
 
 app.add_middleware(
@@ -76,13 +583,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

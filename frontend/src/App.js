@@ -1,52 +1,287 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { useState, useEffect, useCallback } from 'react';
+import '@/App.css';
+import axios from 'axios';
+
+import TopBar from '@/components/game/TopBar';
+import StartScreen from '@/components/game/StartScreen';
+import MainScreen from '@/components/game/MainScreen';
+import WarehouseScreen from '@/components/game/WarehouseScreen';
+import MenuScreen from '@/components/game/MenuScreen';
+import UpgradesScreen from '@/components/game/UpgradesScreen';
+import StatsScreen from '@/components/game/StatsScreen';
+import DailyReport from '@/components/game/DailyReport';
+import GameOverModal from '@/components/game/GameOverModal';
+
+import { Toaster, toast } from 'sonner';
+import {
+  PlayCircle, Package, UtensilsCrossed, Wrench, BarChart3
+} from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
+const TABS = [
+  { id: 'main', label: 'Играть', icon: PlayCircle },
+  { id: 'warehouse', label: 'Склад', icon: Package },
+  { id: 'menu', label: 'Меню', icon: UtensilsCrossed },
+  { id: 'upgrades', label: 'Улучшения', icon: Wrench },
+  { id: 'stats', label: 'Статистика', icon: BarChart3 },
+];
+
+function App() {
+  const [gameState, setGameState] = useState(null);
+  const [gameData, setGameData] = useState(null);
+  const [saves, setSaves] = useState([]);
+  const [activeTab, setActiveTab] = useState('main');
+  const [dailyReport, setDailyReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [started, setStarted] = useState(false);
+
+  // Fetch static game data
+  useEffect(() => {
+    axios.get(`${API}/game/data`).then((res) => setGameData(res.data)).catch(console.error);
+    axios.get(`${API}/game/saves/list`).then((res) => setSaves(res.data)).catch(console.error);
+  }, []);
+
+  const refreshGameState = useCallback(async (gameId) => {
     try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+      const res = await axios.get(`${API}/game/${gameId}`);
+      setGameState(res.data);
+    } catch (err) {
+      console.error('Failed to refresh game state:', err);
+    }
+  }, []);
+
+  const handleNewGame = async (playerName) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/game/new`, { player_name: playerName });
+      setGameState(res.data);
+      setStarted(true);
+      setActiveTab('main');
+      toast.success('Новая игра начата!');
+    } catch (err) {
+      toast.error('Ошибка при создании игры');
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  const handleLoadGame = async (gameId) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/game/${gameId}`);
+      setGameState(res.data);
+      setStarted(true);
+      setActiveTab('main');
+      toast.success('Игра загружена!');
+    } catch (err) {
+      toast.error('Ошибка при загрузке');
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  const handleDeleteGame = async (gameId) => {
+    try {
+      await axios.delete(`${API}/game/${gameId}`);
+      setSaves((prev) => prev.filter((s) => s.id !== gameId));
+      toast.success('Сохранение удалено');
+    } catch (err) {
+      toast.error('Ошибка при удалении');
     }
   };
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+  const handlePlayDay = async () => {
+    if (!gameState) return;
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/game/${gameState.id}/play-day`);
+      setDailyReport(res.data.report);
+      setGameState(res.data.game_state);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка при симуляции дня');
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  const handleBuyIngredients = async (purchases) => {
+    if (!gameState) return;
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/game/${gameState.id}/buy-ingredients`, { purchases });
+      setGameState((prev) => ({
+        ...prev,
+        money: res.data.money,
+        inventory: res.data.inventory,
+      }));
+      toast.success(`Закупка: -${res.data.total_cost.toFixed(0)} ₽`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка при закупке');
+    }
+    setLoading(false);
+  };
+
+  const handleSetPrices = async (prices) => {
+    if (!gameState) return;
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/game/${gameState.id}/set-prices`, { prices });
+      setGameState((prev) => ({ ...prev, menu_prices: res.data.menu_prices }));
+      toast.success('Цены обновлены');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    }
+    setLoading(false);
+  };
+
+  const handleToggleMenuItem = async (itemId, isAvailable) => {
+    if (!gameState) return;
+    try {
+      const res = await axios.post(`${API}/game/${gameState.id}/toggle-menu-item`, {
+        item_id: itemId,
+        is_available: isAvailable,
+      });
+      setGameState((prev) => ({ ...prev, menu_available: res.data.menu_available }));
+    } catch (err) {
+      toast.error('Ошибка');
+    }
+  };
+
+  const handleBuyUpgrade = async (upgradeId) => {
+    if (!gameState) return;
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/game/${gameState.id}/buy-upgrade`, { upgrade_id: upgradeId });
+      setGameState((prev) => ({
+        ...prev,
+        money: res.data.money,
+        purchased_upgrades: res.data.purchased_upgrades,
+        ...(res.data.reputation !== undefined ? { reputation: res.data.reputation } : {}),
+      }));
+      const upgrade = gameData?.upgrades?.find((u) => u.id === upgradeId);
+      toast.success(`Куплено: ${upgrade?.name || upgradeId}`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка при покупке');
+    }
+    setLoading(false);
+  };
+
+  const handleRestart = () => {
+    setGameState(null);
+    setStarted(false);
+    setDailyReport(null);
+    setActiveTab('main');
+    axios.get(`${API}/game/saves/list`).then((res) => setSaves(res.data)).catch(console.error);
+  };
+
+  const renderScreen = () => {
+    switch (activeTab) {
+      case 'main':
+        return (
+          <MainScreen
+            gameState={gameState}
+            gameData={gameData}
+            onPlayDay={handlePlayDay}
+            loading={loading}
+          />
+        );
+      case 'warehouse':
+        return (
+          <WarehouseScreen
+            gameState={gameState}
+            gameData={gameData}
+            onBuyIngredients={handleBuyIngredients}
+            loading={loading}
+          />
+        );
+      case 'menu':
+        return (
+          <MenuScreen
+            gameState={gameState}
+            gameData={gameData}
+            onSetPrices={handleSetPrices}
+            onToggleMenuItem={handleToggleMenuItem}
+            loading={loading}
+          />
+        );
+      case 'upgrades':
+        return (
+          <UpgradesScreen
+            gameState={gameState}
+            gameData={gameData}
+            onBuyUpgrade={handleBuyUpgrade}
+            loading={loading}
+          />
+        );
+      case 'stats':
+        return <StatsScreen gameId={gameState?.id} API={API} />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+    <div className="flex items-center justify-center min-h-screen" style={{ background: '#2C1810' }}>
+      <Toaster position="top-center" richColors />
+      <div className="game-window" data-testid="game-window">
+        {!started ? (
+          <StartScreen
+            onNewGame={handleNewGame}
+            onLoadGame={handleLoadGame}
+            saves={saves}
+            onDeleteGame={handleDeleteGame}
+            loading={loading}
+          />
+        ) : (
+          <>
+            <TopBar
+              money={gameState?.money || 0}
+              reputation={gameState?.reputation || 0}
+              day={gameState?.current_day || 1}
+              status={gameState?.status || 'active'}
+            />
 
-function App() {
-  return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+            {/* Tab Navigation */}
+            <div className="px-4 pt-2" style={{ background: 'var(--coffee-bg)' }}>
+              <div className="tab-nav" data-testid="tab-navigation">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                      onClick={() => setActiveTab(tab.id)}
+                      data-testid={`tab-${tab.id}`}
+                    >
+                      <Icon size={15} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Screen Content */}
+            <div className="flex-1 overflow-hidden" style={{ background: 'var(--coffee-bg)' }}>
+              {renderScreen()}
+            </div>
+
+            {/* Modals */}
+            <DailyReport
+              report={dailyReport}
+              onClose={() => setDailyReport(null)}
+              gameData={gameData}
+            />
+            <GameOverModal
+              status={gameState?.status}
+              gameState={gameState}
+              onNewGame={handleRestart}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }
