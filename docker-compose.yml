@@ -2,7 +2,6 @@ services:
   # ── MongoDB ──
   mongo:
     image: mongo:7
-    container_name: coffeeshop-mongo
     restart: unless-stopped
     ports:
       - "27017:27017"
@@ -17,7 +16,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: coffeeshop-backend
     restart: unless-stopped
     depends_on:
       mongo:
@@ -34,7 +32,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: coffeeshop-frontend
     restart: unless-stopped
     depends_on:
       - backend
