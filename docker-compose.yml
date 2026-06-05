@@ -30,8 +30,6 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
-    ports:
-      - "27017:27017"
     healthcheck:
       test: mongosh --eval "db.adminCommand('ping')" --quiet
       interval: 10s
