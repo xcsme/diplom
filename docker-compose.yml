@@ -23,8 +23,6 @@ services:
       - MONGO_URL=mongodb://mongo:27017
       - DB_NAME=coffeeshop_game
       - CORS_ORIGINS=*
-    ports:
-      - "8001:8001"
 
   # ── MongoDB ──
   mongo:
