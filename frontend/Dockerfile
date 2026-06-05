@@ -3,8 +3,8 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --network-timeout 120000
+COPY package.json ./
+RUN yarn install --network-timeout 120000
 
 COPY . .
 
